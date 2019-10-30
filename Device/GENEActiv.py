@@ -1,3 +1,5 @@
+
+# ========================================== IMPORTS ==========================================
 import numpy as np
 import datetime
 from os import listdir
@@ -46,6 +48,9 @@ class GENEActiv():
             "volts": 0,
             "lux": 0
         }
+
+        self.error_corrected = False
+        self.time_shifted = False
         self.x = None
         self.y = None
         self.z = None
@@ -118,6 +123,7 @@ class GENEActiv():
             return returned_array
 
         # Variable Declaration and Initialization
+
         lines = None
         header_packet = None
         data_packet = None
@@ -146,25 +152,27 @@ class GENEActiv():
         # Extracting and saving relevant information from header dictionary
         # UPDATING HEADER DICTIONARY
         self.metadata.update({
+            # "visit_num": int(self.file.split("_")[3]),
             "serial_num": header["Device Unique Serial Code"],
             "device_type": header["Device Type"],
             "temperature_units": header["Temperature Sensor Units"],
-            "measurement_frequency": header["Measurement Frequency"],
-            "measurement_period": header["Measurement Period"],
-            "start_time": header["Start Time"],
+            "measurement_frequency": int(header["Measurement Frequency"].split(" ")[0]),
+            "measurement_period": int(header["Measurement Period"].split(" ")[0]),
+            "start_time": datetime.datetime.strptime(data_packet[3][10:], "%Y-%m-%d %H:%M:%S:%f"),
             "study_centre": header["Study Centre"],
             "study_code": header["Study Code"],
             "investigator_id": header["Investigator ID"],
             "exercise_type": header["Exercise Type"],
             "config_id": header["Config Operator ID"],
-            "config_time": header["Config Time"],
+            "config_time": datetime.datetime.strptime(header["Config Time"], "%Y-%m-%d %H:%M:%S:%f"),
             "config_notes": header["Config Notes"],
             "extract_id": header["Extract Operator ID"],
-            "extract_time": header["Extract Time"],
+            "extract_time": datetime.datetime.strptime(header["Extract Time"], "%Y-%m-%d %H:%M:%S:%f"),
             "extract_notes": header["Extract Notes"],
+            "time_shift": float(header["Extract Notes"].split(" ")[-1][:-2]),
             "device_location": header["Device Location Code"],
             "subject_id": header["Subject Code"],
-            "date_of_birth": header["Date of Birth"],
+            "date_of_birth": datetime.datetime.strptime(header["Date of Birth"], "%Y-%m-%d"),
             "sex": header["Sex"],
             "height": header["Height"],
             "weight": header['Weight'],
@@ -200,7 +208,7 @@ class GENEActiv():
             light = []
             button = []
             for i in range(self.metadata["number_of_pages"]):
-                if (i // 100) * 100 == i:
+                if (i // 1000) * 1000 == i:
                     if not quiet:
                         print("Current Progress: %f %%" % (100 * i / self.metadata["number_of_pages"]))
                 curr_chunk = process_curr(data_packet[(i * 10) + 9], (self.calibration_info["x-offset"],
@@ -225,7 +233,31 @@ class GENEActiv():
             self.button = np.array(button)
             self.temperature = np.array(temps)
 
-    def time_shift(self):
+    def calculate_time_shift(self, force=False):
+        if (self.time_shifted and force) or (not self.time_shifted):
+            self.remove_counter = abs(self.samples / (self.metadata["time_shift"] * self.metadata["frequency"]))
+            if self.metadata["time_shift"] > 0:
+                # We need to remove every nth value (n = remove_counter)
+                self.x = np.delete(self.x,
+                                   [(self.remove_counter * i) for i in range(int(len(self.x) / self.remove_counter))])
+                self.y = np.delete(self.y,
+                                   [(self.remove_counter * i) for i in range(int(len(self.y) / self.remove_counter))])
+                self.z = np.delete(self.z,
+                                   [(self.remove_counter * i) for i in range(int(len(self.z) / self.remove_counter))])
+
+            else:
+                # We need to add a 0 value every remove_counter indices
+                self.x = np.insert(self.x,
+                                   [(self.remove_counter * i) for i in range(int(len(self.x) / self.remove_counter))], 0)
+                self.y = np.insert(self.y,
+                                   [(self.remove_counter * i) for i in range(int(len(self.y) / self.remove_counter))], 0)
+                self.z = np.insert(self.z,
+                                   [(self.remove_counter * i) for i in range(int(len(self.z) / self.remove_counter))], 0)
+        else:
+            print("Times have already been shifted. To shift again, run with param force=True")
+
+    def PDFSummary(self):
+
         return 0
 
 

@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/nimbal.iml" filepath="$PROJECT_DIR$/.idea/nimbal.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../owcurate/.idea/owcurate.iml" filepath="$PROJECT_DIR$/../owcurate/.idea/owcurate.iml" />
     </modules>
   </component>
 </project>
