@@ -1,5 +1,5 @@
 
-# ========================================== IMPORTS ==========================================
+# ======================================== IMPORTS ========================================
 import numpy as np
 import datetime
 from os import listdir
@@ -171,8 +171,8 @@ class GENEActiv():
             "extract_notes": header["Extract Notes"],
             "time_shift": float(header["Extract Notes"].split(" ")[-1][:-2]),
             "device_location": header["Device Location Code"],
-            "subject_id": header["Subject Code"],
-            "date_of_birth": datetime.datetime.strptime(header["Date of Birth"], "%Y-%m-%d"),
+            "subject_id": int(header["Subject Code"]),
+            "date_of_birth": header["Date of Birth"],
             "sex": header["Sex"],
             "height": header["Height"],
             "weight": header['Weight'],
