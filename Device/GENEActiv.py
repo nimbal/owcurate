@@ -6,11 +6,8 @@ from os import listdir
 from os.path import isfile, join
 
 
-class GENEActiv():
-    def __init__(self, path):
-        self.file = path
-        self.file_name = path.split("/")[-1],
-        self.working_directory = path.split("/")[:-1]
+class GENEActiv:
+    def __init__(self):
         self.metadata = {
             "serial_num": "",
             "device_type": "",
@@ -60,7 +57,7 @@ class GENEActiv():
         self.samples = 0
         self.remove_counter = 0
 
-    def read_from_raw(self, quiet=False, parsehex=True):
+    def read_from_raw(self, path, quiet=False, parsehex=True):
 
         def twos_comp(val, bits):
             """ This method calculates the twos complement value of the current bit
@@ -123,6 +120,9 @@ class GENEActiv():
             return returned_array
 
         # Variable Declaration and Initialization
+        self.file = path
+        self.file_name = path.split("/")[-1],
+        self.working_directory = path.split("/")[:-1]
 
         lines = None
         header_packet = None
@@ -152,7 +152,6 @@ class GENEActiv():
         # Extracting and saving relevant information from header dictionary
         # UPDATING HEADER DICTIONARY
         self.metadata.update({
-            # "visit_num": int(self.file.split("_")[3]),
             "serial_num": header["Device Unique Serial Code"],
             "device_type": header["Device Type"],
             "temperature_units": header["Temperature Sensor Units"],
@@ -235,7 +234,7 @@ class GENEActiv():
 
     def calculate_time_shift(self, force=False):
         if (self.time_shifted and force) or (not self.time_shifted):
-            self.remove_counter = abs(self.samples / (self.metadata["time_shift"] * self.metadata["frequency"]))
+            self.remove_counter = abs(self.samples / (self.metadata["time_shift"] * self.metadata["measurement_frequency"]))
             if self.metadata["time_shift"] > 0:
                 # We need to remove every nth value (n = remove_counter)
                 self.x = np.delete(self.x,

@@ -25,7 +25,7 @@ def GENEActivToEDF(GENEActiv, path, accel=True, temperature=True, light=True, bu
 
     # Outputting Accelerometer Information
     if accel:
-        accelerometer_file = pyedflib.EdfWriter(path + "Accelerometer.EDF", 3)
+        accelerometer_file = pyedflib.EdfWriter(path + GENEActiv.file_name[:-4] + "Accelerometer.EDF", 3)
         accelerometer_file.setHeader({"technician": "",
                                       "recording_additional": "",
                                       "patientname": "",
@@ -56,7 +56,7 @@ def GENEActivToEDF(GENEActiv, path, accel=True, temperature=True, light=True, bu
         accelerometer_file.close()
 
     if temperature:
-        temperature_file = pyedflib.EdfWriter(path + "Temperature.EDF", 1)
+        temperature_file = pyedflib.EdfWriter(path + GENEActiv.file_name[:-4] + "Temperature.EDF", 1)
 
         temperature_file.setHeader({"technician": "",
                                     "recording_additional": "",
@@ -78,7 +78,7 @@ def GENEActivToEDF(GENEActiv, path, accel=True, temperature=True, light=True, bu
         temperature_file.close()
 
     if light:
-        light_file = pyedflib.EdfWriter(path + "Light.EDF", 1)
+        light_file = pyedflib.EdfWriter(path + GENEActiv.file_name[:-4] + "Light.EDF", 1)
 
         light_file.setHeader({"technician": "",
                               "recording_additional": "",
@@ -101,7 +101,7 @@ def GENEActivToEDF(GENEActiv, path, accel=True, temperature=True, light=True, bu
         light_file.close()
 
     if button:
-        button_file = pyedflib.EdfWriter(path + "Button.EDF", 1)
+        button_file = pyedflib.EdfWriter(path + GENEActiv.file_name[:-4] + "Button.EDF", 1)
         button_file.setHeader({"technician": "",
                                "recording_additional": "",
                                "patientname": "",
@@ -123,3 +123,35 @@ def GENEActivToEDF(GENEActiv, path, accel=True, temperature=True, light=True, bu
         button_file.close()
 
 
+# TODO: FINISH THIS
+def EDFToSensor(sensor, path, accel, ecg, temperature, light, button):
+
+    if accel is not "":
+        with pyedflib.EdfReader(join(path, accel)) as accelerometer_file:
+
+            header = accelerometer_file.getHeader()
+            accelerometer_header = accelerometer_file.getSignalHeader(0)
+
+            sensor.metadata.update({
+                "subject_id": header["patientcode"],
+                "sex": header["gender"],
+                "start_time": header["startdate"],
+                "date_of_birth": header["birthdate"],
+                "measurement_frequency": accelerometer_header["sample_rate"]
+            })
+
+            GENEActiv.x = accelerometer_file.readSignal(0)
+            GENEActiv.y = accelerometer_file.readSignal(1)
+            GENEActiv.z = accelerometer_file.readSignal(2)
+
+    if temperature is not "":
+        with pyedflib.EdfReader(join(path, temperature)) as temperature_file:
+            GENEActiv.temperature = temperature_file.readSignal(0)
+
+    if light is not "":
+        with pyedflib.EdfReader(join(path, light)) as light_file:
+            GENEActiv.light = light_file.readSignal(0)
+
+    if button is not "":
+        with pyedflib.EdfReader(join(path, button)) as button_file:
+            GENEActiv.button = button_file.readSignal(0)
