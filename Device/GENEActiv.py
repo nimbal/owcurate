@@ -121,8 +121,8 @@ class GENEActiv:
 
         # Variable Declaration and Initialization
         self.file = path
-        self.file_name = path.split("/")[-1],
-        self.working_directory = path.split("/")[:-1]
+        self.file_name = self.file.split("/")[-1],
+        self.working_directory = self.file.split("/")[:-1]
 
         lines = None
         header_packet = None
@@ -168,7 +168,7 @@ class GENEActiv:
             "extract_id": header["Extract Operator ID"],
             "extract_time": datetime.datetime.strptime(header["Extract Time"], "%Y-%m-%d %H:%M:%S:%f"),
             "extract_notes": header["Extract Notes"],
-            "time_shift": float(header["Extract Notes"].split(" ")[-1][:-2]),
+            "time_shift": float(header["Extract Notes"].split(" ")[3][:-2]),
             "device_location": header["Device Location Code"],
             "subject_id": int(header["Subject Code"]),
             "date_of_birth": header["Date of Birth"],

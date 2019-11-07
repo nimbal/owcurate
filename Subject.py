@@ -5,10 +5,13 @@
 # ======================================== IMPORTS ========================================
 from Device.GENEActiv import *
 from Device.Bittium import *
+from Sensor.Sensor import *
 
 class Subject:
     def __init__(self, path, subjectID):
         self.path = path
         self.id = subjectID
-        LA_file = input("Input Left Ankle File")
-        self.LA = GENEActiv()
+        self.Sensors = {}
+
+    def init_sensor(self, sensor_name):
+        self.Sensors.update({sensor_name: Sensor()})
