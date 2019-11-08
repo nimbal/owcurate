@@ -8,23 +8,40 @@ import pyedflib
 
 
 # ======================================== DEFINITIONS ========================================
-def GENEActivToEDF(GENEActiv, path, accel=True, temperature=True, light=True, button=True):
-    """ This method outputs the GENEActiv data from the GENEActiv class into various EDF Files
-    ~Supposedly Universal~
-
-    TODO: Combining signals into the same files
-
+def GENEActivToEDF(GENEActiv, path, accel="Accelerometer.EDF", temperature="Thermometer.EDF", light="Light.EDF", button="Button.EDF"):
+    '''
+    GENEActivToEDF is a universal class that takes GENEActiv device output and transforms it into EDF Files
     Args:
-        GENEActiv: GENEActiv File
-        outputfiles:
+        GENEActiv: initialized owcurate.Device.GENEActiv.GENEActiv class
+            This is where the information (to be outputted into EDF) is read from
+        path: String
+            directory to be outputted to
+        accel: String
+            File name of the accelerometer path, if empty, will not output accelerometer
+        temperature: String
+                File name of the temperature path, if empty, will not output temperature
+        light: String
+            File name of the light path, if empty, will not output light
+        button: String
+            File name of the button path, if empty, will not output button
+
+    Examples:
+        geneactiv = GENEActiv()
+
+        geneactiv.read_from_raw(path)
+
+        geneactiv.calculate_time_shift()
+
+        GENEActivToEDF(geneactiv, output_path)
+
 
     Returns:
-
-    """
+        EDF Files corresponding to above specifications
+    '''
 
     # Outputting Accelerometer Information
-    if accel:
-        accelerometer_file = pyedflib.EdfWriter("%s/Accelerometer.EDF" % path, 3)
+    if accel is not "":
+        accelerometer_file = pyedflib.EdfWriter("%s/%s" % (path, accel), 3)
         accelerometer_file.setHeader({"technician": "",
                                       "recording_additional": "",
                                       "patientname": "",
@@ -54,8 +71,8 @@ def GENEActivToEDF(GENEActiv, path, accel=True, temperature=True, light=True, bu
         accelerometer_file.writeSamples([GENEActiv.x, GENEActiv.y, GENEActiv.z])
         accelerometer_file.close()
 
-    if temperature:
-        temperature_file = pyedflib.EdfWriter("%s/Thermometer.EDF" % path, 1)
+    if temperature is not "":
+        temperature_file = pyedflib.EdfWriter("%s/%s" % (path, temperature), 1)
 
         temperature_file.setHeader({"technician": "",
                                     "recording_additional": "",
@@ -76,8 +93,8 @@ def GENEActivToEDF(GENEActiv, path, accel=True, temperature=True, light=True, bu
         temperature_file.writeSamples([GENEActiv.temperature])
         temperature_file.close()
 
-    if light:
-        light_file = pyedflib.EdfWriter("%s/Light.EDF" % path, 1)
+    if light is not "":
+        light_file = pyedflib.EdfWriter("%s/%s" % (path, light), 1)
 
         light_file.setHeader({"technician": "",
                               "recording_additional": "",
@@ -99,8 +116,8 @@ def GENEActivToEDF(GENEActiv, path, accel=True, temperature=True, light=True, bu
         light_file.writeSamples([GENEActiv.light])
         light_file.close()
 
-    if button:
-        button_file = pyedflib.EdfWriter("%s/Button.EDF" % path, 1)
+    if button is not "":
+        button_file = pyedflib.EdfWriter("%s/%s" % (path, button), 1)
         button_file.setHeader({"technician": "",
                                "recording_additional": "",
                                "patientname": "",
@@ -122,9 +139,34 @@ def GENEActivToEDF(GENEActiv, path, accel=True, temperature=True, light=True, bu
         button_file.close()
 
 
-# TODO: FINISH THIS
 def EDFToSensor(sensor, path, accel, ecg, temperature, light, button, metadata="accel"):
+    '''
+    EDFToSensor function reads multiple EDF files and transforms them into a universal Sensor class in memory
 
+    TODO: Implement ECG
+    TODO: Implement metadata reading from different files
+    Args:
+        sensor: initialized owcurate.Sensor.Sensor object
+            This is where the read information will be returned into
+        path: String, location to path of files folder
+            This goes to the directory of the files folder, where all the files are read in from
+        accel: String
+            File name of the accelerometer file to be read in
+        ecg: String
+            File name of the ECG file to be read in
+        temperature: String
+            File name of the Temperature file to be read in
+        light: String
+            File name of the Light sensor file to be read in
+        button: String
+            File name of the button sensor file to be read in
+        metadata: One of "accel", "ecg", "temperature", "light", "button" that is not empty
+            Chooses which file to return the metadata from (for the overall sensor)
+            Not complete yet
+
+    Returns:
+
+    '''
     if accel is not "":
         sensor.init_accelerometer()
         with pyedflib.EdfReader(join(path, accel)) as accelerometer_file:

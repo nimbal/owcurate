@@ -6,6 +6,7 @@ from os import listdir
 from os.path import isfile, join
 
 
+# ======================================== GENEACTIV CLASS ========================================
 class GENEActiv:
     def __init__(self):
         self.metadata = {
@@ -58,6 +59,20 @@ class GENEActiv:
         self.remove_counter = 0
 
     def read_from_raw(self, path, quiet=False, parsehex=True):
+        '''
+        read_from_raw reads a raw GENEActiv .bin file
+        Args:
+            path: String
+                Input path
+            quiet: Bool
+                Whether or not to print additional information
+                TODO: Figure out how to change this into -v command
+            parsehex: Bool
+                Whether or not to parse the hexadecimal (as opposed to only returning header information)
+
+        Returns:
+
+        '''
 
         def twos_comp(val, bits):
             """ This method calculates the twos complement value of the current bit
@@ -99,7 +114,7 @@ class GENEActiv:
                 x_comp = curr[0:12]
                 y_comp = curr[12:24]
                 z_comp = curr[24:36]
-                light = curr[36:46]           # TODO: These variables are not used, not sure if they will be used
+                light = curr[36:46]
                 button = int(curr[46], 2)
                 res = int(curr[47], 2)
 
@@ -233,6 +248,17 @@ class GENEActiv:
             self.temperature = np.array(temps)
 
     def calculate_time_shift(self, force=False):
+        '''
+        calculate_time_shift adds one null sample (or deletes one sample) every X number of samples
+        X is determined through the GENEActiv Clock Drift measurement
+        Args:
+            force: bool
+                If time shift has already been done, the time_shifted will be True.
+                force is an optional parameter that neglects that and will shift regardless
+
+        Returns:
+
+        '''
         if (self.time_shifted and force) or (not self.time_shifted):
             self.remove_counter = abs(self.samples / (self.metadata["time_shift"] * self.metadata["measurement_frequency"]))
             if self.metadata["time_shift"] > 0:

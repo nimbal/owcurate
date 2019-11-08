@@ -7,6 +7,7 @@ from Device.GENEActiv import *
 from Device.Bittium import *
 from Sensor.Sensor import *
 
+
 class Subject:
     def __init__(self, path, subjectID):
         self.path = path
