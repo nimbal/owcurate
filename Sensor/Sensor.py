@@ -35,6 +35,10 @@ class Sensor:
     def init_button(self):
         self.button = Button()
 
+    def generate_times(self, frequency, length):
+        return (np.array([self.metadata["start_time"] + datetime.timedelta(seconds= i / frequency) for i in range(length)]))
+
+
     def plot_accelerometer(self):
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
 
@@ -76,7 +80,7 @@ class Sensor:
         new_start = []
         new_end = []
         for i in range(len(start_array) - 1):
-            if end_array[i] - start_array[i] > mins1 * 60:
+            if end_array[i] - start_array[i] > mins1 * 60 * 300:
                 new_start.append(start_array[i])
                 new_end.append(end_array[i])
         print("After Duration check: %i gaps remaining" % len(new_start))
@@ -93,7 +97,7 @@ class Sensor:
         processed_start = []
         processed_end = []
         for i in range(len(pre_process_start) - 1):
-            if pre_process_start[i + 1] - pre_process_end[i] > mins2 * 60:
+            if pre_process_start[i + 1] - pre_process_end[i] > mins2 * 60 * 300:
                 processed_start.append(pre_process_start[i])
                 processed_end.append(pre_process_end[i])
         print("After Ending Window Check: %i gaps remaining" % len(processed_start))

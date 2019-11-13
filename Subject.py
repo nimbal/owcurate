@@ -16,3 +16,5 @@ class Subject:
 
     def init_sensor(self, sensor_name):
         self.Sensors.update({sensor_name: Sensor()})
+
+

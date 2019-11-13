@@ -183,9 +183,9 @@ class GENEActiv:
             "extract_id": header["Extract Operator ID"],
             "extract_time": datetime.datetime.strptime(header["Extract Time"], "%Y-%m-%d %H:%M:%S:%f"),
             "extract_notes": header["Extract Notes"],
-            "time_shift": float(header["Extract Notes"].split(" ")[3][:-2]),
+            "time_shift": float(header["Extract Notes"].split(" ")[3][:-2].replace(",", "")),
             "device_location": header["Device Location Code"],
-            "subject_id": int(header["Subject Code"]),
+            "subject_id": (int(header["Subject Code"]) if header["Subject Code"] is not "" else 0),
             "date_of_birth": header["Date of Birth"],
             "sex": header["Sex"],
             "height": header["Height"],
@@ -264,20 +264,20 @@ class GENEActiv:
             if self.metadata["time_shift"] > 0:
                 # We need to remove every nth value (n = remove_counter)
                 self.x = np.delete(self.x,
-                                   [(self.remove_counter * i) for i in range(int(len(self.x) / self.remove_counter))])
+                                   [int(self.remove_counter * i) for i in range(int(len(self.x) / self.remove_counter))])
                 self.y = np.delete(self.y,
-                                   [(self.remove_counter * i) for i in range(int(len(self.y) / self.remove_counter))])
+                                   [int(self.remove_counter * i) for i in range(int(len(self.y) / self.remove_counter))])
                 self.z = np.delete(self.z,
-                                   [(self.remove_counter * i) for i in range(int(len(self.z) / self.remove_counter))])
+                                   [int(self.remove_counter * i) for i in range(int(len(self.z) / self.remove_counter))])
 
             else:
                 # We need to add a 0 value every remove_counter indices
                 self.x = np.insert(self.x,
-                                   [(self.remove_counter * i) for i in range(int(len(self.x) / self.remove_counter))], 0)
+                                   [int(self.remove_counter * i) for i in range(int(len(self.x) / self.remove_counter))], 0)
                 self.y = np.insert(self.y,
-                                   [(self.remove_counter * i) for i in range(int(len(self.y) / self.remove_counter))], 0)
+                                   [int(self.remove_counter * i) for i in range(int(len(self.y) / self.remove_counter))], 0)
                 self.z = np.insert(self.z,
-                                   [(self.remove_counter * i) for i in range(int(len(self.z) / self.remove_counter))], 0)
+                                   [int(self.remove_counter * i) for i in range(int(len(self.z) / self.remove_counter))], 0)
         else:
             print("Times have already been shifted. To shift again, run with param force=True")
 
