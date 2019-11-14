@@ -9,10 +9,16 @@ from Sensor.Sensor import *
 
 
 class Subject:
-    def __init__(self, path, subjectID):
-        self.path = path
-        self.id = subjectID
+    def __init__(self):
+        self.path = None
+        self.id = None
         self.Sensors = {}
+
+    def set_subject_id(self, subjID):
+        self.id = subjID
+
+    def set_path(self, path):
+        self.path = path
 
     def init_sensor(self, sensor_name):
         self.Sensors.update({sensor_name: Sensor()})

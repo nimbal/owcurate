@@ -36,7 +36,8 @@ class Sensor:
         self.button = Button()
 
     def generate_times(self, frequency, length):
-        return (np.array([self.metadata["start_time"] + datetime.timedelta(seconds= i / frequency) for i in range(length)]))
+        start_time = self.metadata["start_time"]
+        return np.array([start_time + datetime.timedelta(seconds=i/frequency) for i in range(length)])
 
 
     def plot_accelerometer(self):
