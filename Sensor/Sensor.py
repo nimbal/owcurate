@@ -52,7 +52,7 @@ class Sensor:
         if self.thermometer is None:
             raise Exception("Thermometer has not been initialized")
 
-        if self.accelerometer.svms is None:
+        if len(self.accelerometer.svms) == 0:
             raise Exception("SVMS have not been yet calculated")
 
         flattened_svms = np.zeros(len(self.accelerometer.svms))

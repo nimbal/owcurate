@@ -90,7 +90,7 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer.EDF", temperature="Ther
                                              "digital_max": 32767, "digital_min": -32768,
                                              "prefilter": "pre1", "transducer": "trans1"})
 
-        temperature_file.writeSamples([GENEActiv.temperature])
+        temperature_file.writeSamples([np.array(GENEActiv.temperature)])
         temperature_file.close()
 
     if light is not "":
@@ -113,7 +113,7 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer.EDF", temperature="Ther
                                        "digital_max": 32767, "digital_min": -32768,
                                        "prefilter": "pre1", "transducer": "trans1"})
 
-        light_file.writeSamples([GENEActiv.light])
+        light_file.writeSamples([np.array(GENEActiv.light)])
         light_file.close()
 
     if button is not "":
@@ -135,7 +135,7 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer.EDF", temperature="Ther
                                         "digital_max": 32767, "digital_min": -32768,
                                         "prefilter": "pre1", "transducer": "trans1"})
 
-        button_file.writeSamples([GENEActiv.button])
+        button_file.writeSamples([np.array(GENEActiv.button)])
         button_file.close()
 
 
@@ -204,4 +204,4 @@ def EDFToSensor(sensor, path, accel, ecg, temperature, light, button, metadata="
     if button is not "":
         with pyedflib.EdfReader(join(path, button)) as button_file:
             sensor.thermometer.frequency = button_file.getSignalHeader(0)["sample_rate"]
-            sensor.thermometer.temperatures = button_file.readSignal(0)
+            sensor.button.button = button_file.readSignal(0)
