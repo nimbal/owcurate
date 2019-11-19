@@ -198,10 +198,11 @@ def EDFToSensor(sensor, path, accel, ecg, temperature, light, button, metadata="
     if light is not "":
         sensor.init_light()
         with pyedflib.EdfReader(join(path, light)) as light_file:
-            sensor.thermometer.frequency = light_file.getSignalHeader(0)["sample_rate"]
-            sensor.thermometer.temperatures = light_file.readSignal(0)
+            sensor.light.frequency = light_file.getSignalHeader(0)["sample_rate"]
+            sensor.light.light = light_file.readSignal(0)
 
     if button is not "":
+        sensor.init_button()
         with pyedflib.EdfReader(join(path, button)) as button_file:
-            sensor.thermometer.frequency = button_file.getSignalHeader(0)["sample_rate"]
+            sensor.light.frequency = button_file.getSignalHeader(0)["sample_rate"]
             sensor.button.button = button_file.readSignal(0)

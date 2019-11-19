@@ -45,7 +45,7 @@ class Accelerometer:
         Returns:
         list of indices
         """
-        def bandpass_filter(dataset, lowcut, highcut, filter_order):
+        def bandpass_filter(dataset, lowcut, highcut, frequency, filter_order):
             """
             Method that filters data with bandpass filter
 
@@ -63,7 +63,7 @@ class Accelerometer:
                 Filtered array
             """
             # Filter characteristics
-            nyquist_freq = 0.5 * self.frequency
+            nyquist_freq = 0.5 * frequency
             low = lowcut / nyquist_freq
             high = highcut / nyquist_freq
             b, a = butter(filter_order, [low, high], btype="band")
