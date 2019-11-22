@@ -8,7 +8,7 @@ import pyedflib
 
 
 # ======================================== DEFINITIONS ========================================
-def GENEActivToEDF(GENEActiv, path, accel="Accelerometer.EDF", temperature="Thermometer.EDF", light="Light.EDF", button="Button.EDF"):
+def GENEActivToEDF(GENEActiv, path, accel="Accelerometer", temperature="Temperature", light="Light", button="Button"):
     '''
     GENEActivToEDF is a universal class that takes GENEActiv device output and transforms it into EDF Files
     Args:
@@ -41,7 +41,7 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer.EDF", temperature="Ther
 
     # Outputting Accelerometer Information
     if accel is not "":
-        accelerometer_file = pyedflib.EdfWriter("%s/%s" % (path, accel), 3)
+        accelerometer_file = pyedflib.EdfWriter("%s/%s/%s_Accelerometer.EDF" % (path, accel, GENEActiv.file_name[0][:-4]), 3)
         accelerometer_file.setHeader({"technician": "",
                                       "recording_additional": "",
                                       "patientname": "",
@@ -72,7 +72,7 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer.EDF", temperature="Ther
         accelerometer_file.close()
 
     if temperature is not "":
-        temperature_file = pyedflib.EdfWriter("%s/%s" % (path, temperature), 1)
+        temperature_file = pyedflib.EdfWriter("%s/%s/%s_Temperature.EDF" % (path, temperature, GENEActiv.file_name[0][:-4]), 1)
 
         temperature_file.setHeader({"technician": "",
                                     "recording_additional": "",
@@ -94,7 +94,7 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer.EDF", temperature="Ther
         temperature_file.close()
 
     if light is not "":
-        light_file = pyedflib.EdfWriter("%s/%s" % (path, light), 1)
+        light_file = pyedflib.EdfWriter("%s/%s/%s_Light.EDF" % (path, light, GENEActiv.file_name[0][:-4]), 1)
 
         light_file.setHeader({"technician": "",
                               "recording_additional": "",
@@ -117,7 +117,7 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer.EDF", temperature="Ther
         light_file.close()
 
     if button is not "":
-        button_file = pyedflib.EdfWriter("%s/%s" % (path, button), 1)
+        button_file = pyedflib.EdfWriter("%s/%s/%s_Button.EDF" % (path, button, GENEActiv.file_name[0][:-4]), 1)
         button_file.setHeader({"technician": "",
                                "recording_additional": "",
                                "patientname": "",
@@ -139,7 +139,7 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer.EDF", temperature="Ther
         button_file.close()
 
 
-def EDFToSensor(sensor, path, accel, ecg, temperature, light, button, metadata="accel"):
+def EDFToSensor(sensor, accel, ecg, temperature, light, button, metadata="accel"):
     '''
     EDFToSensor function reads multiple EDF files and transforms them into a universal Sensor class in memory
 
@@ -169,7 +169,7 @@ def EDFToSensor(sensor, path, accel, ecg, temperature, light, button, metadata="
     '''
     if accel is not "":
         sensor.init_accelerometer()
-        with pyedflib.EdfReader(join(path, accel)) as accelerometer_file:
+        with pyedflib.EdfReader(accel) as accelerometer_file:
             header = accelerometer_file.getHeader()
             accelerometer_header = accelerometer_file.getSignalHeader(0)
 
@@ -191,18 +191,18 @@ def EDFToSensor(sensor, path, accel, ecg, temperature, light, button, metadata="
 
     if temperature is not "":
         sensor.init_thermometer()
-        with pyedflib.EdfReader(join(path, temperature)) as temperature_file:
+        with pyedflib.EdfReader(temperature) as temperature_file:
             sensor.thermometer.frequency = temperature_file.getSignalHeader(0)["sample_rate"]
             sensor.thermometer.temperatures = temperature_file.readSignal(0)
 
     if light is not "":
         sensor.init_light()
-        with pyedflib.EdfReader(join(path, light)) as light_file:
+        with pyedflib.EdfReader(light) as light_file:
             sensor.light.frequency = light_file.getSignalHeader(0)["sample_rate"]
             sensor.light.light = light_file.readSignal(0)
 
     if button is not "":
         sensor.init_button()
-        with pyedflib.EdfReader(join(path, button)) as button_file:
+        with pyedflib.EdfReader(button) as button_file:
             sensor.light.frequency = button_file.getSignalHeader(0)["sample_rate"]
             sensor.button.button = button_file.readSignal(0)

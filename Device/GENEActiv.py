@@ -278,6 +278,7 @@ class GENEActiv:
                                    [int(self.remove_counter * i) for i in range(int(len(self.y) / self.remove_counter))], 0)
                 self.z = np.insert(self.z,
                                    [int(self.remove_counter * i) for i in range(int(len(self.z) / self.remove_counter))], 0)
+            self.time_shifted = True
         else:
             print("Times have already been shifted. To shift again, run with param force=True")
 

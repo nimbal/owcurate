@@ -11,12 +11,11 @@ out_dir = input()
 files = [f for f in listdir(input_dir) if (isfile(join(input_dir, f)) and ".bin" in f)]
 files.sort()
 
-for f in files:
+for f in files[:4]:
     curr = GENEActiv()
     curr.read_from_raw(join(input_dir, f))
     curr.calculate_time_shift()
-    mkdir(join(out_dir, f[:-4]))
-    GENEActivToEDF(curr, join(out_dir, f[:-4]))
+    GENEActivToEDF(curr, out_dir)
 
 
 '''
