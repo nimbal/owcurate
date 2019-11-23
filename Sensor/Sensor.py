@@ -3,6 +3,7 @@ from Sensor.Accelerometer import *
 from Sensor.Thermometer import *
 from Sensor.Light import *
 from Sensor.Button import *
+from scipy.signal import butter, filtfilt
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -20,8 +21,8 @@ class Sensor:
         self.ecg = None
         self.light = None
         self.button = None
-        self.non_wear_starts = None
-        self.non_wear_ends = None
+        self.non_wear_starts = []
+        self.non_wear_ends = []
 
     def init_accelerometer(self):
         self.accelerometer = Accelerometer()
@@ -43,7 +44,17 @@ class Sensor:
     def plot_accelerometer(self):
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
 
-    def non_wear_accel_temp(self, mins1=3, mins2=4):
+    def non_wear_accel_temp(self, epoch_duration=5, window_len=5):
+        """
+        This method calculates non-wear for any given GENEActiv device.
+        Non-wear is characterized by extended periods of inactivity in accelerometer signal, paired by
+            a rapid drop in overall temperature
+        Args:
+            min_duration:
+
+        Returns:
+
+        """
 
         # Checking for uninitialized values
         if self.accelerometer is None:
@@ -52,71 +63,97 @@ class Sensor:
         if self.thermometer is None:
             raise Exception("Thermometer has not been initialized")
 
-        if len(self.accelerometer.svms) == 0:
-            raise Exception("SVMS have not been yet calculated")
-
-        flattened_svms = np.zeros(len(self.accelerometer.svms))
-
-        for i in range(len(self.accelerometer.svms)):
-            if self.accelerometer.svms[i] > 0.2:
-                flattened_svms[i] = self.accelerometer.svms[i]
-
-        start_array = []
-        end_array = []
+        # ==================== Variable declaration and initialization
+        epoch_len = self.accelerometer.frequency * epoch_duration
+        self.angles = [0 for i in range(len(self.accelerometer.x))]
+        self.rolling_mean = []
+        start_indices = []
+        end_indices = []
         curr_stat = False
 
-        for i in range(len(flattened_svms)):
-            if flattened_svms[i] == 0 and not curr_stat:
-                start_array.append(i)
-                curr_stat = True
+        # ==================== Main
+        # Finding angle of accelerometer, using the "Novel way to determine sleep" method
+        # Preliminary accelerometer-based checking
+        for i in range(len(self.accelerometer.x)):
+            self.angles[i] = 2 * abs(math.atan(self.accelerometer.z[i] /
+                                          (math.sqrt(math.pow(self.accelerometer.x[i], 2) +
+                                                     math.pow(self.accelerometer.y[i], 2))))) / math.pi
 
-            if flattened_svms[i] > 0 and curr_stat:
-                end_array.append(i)
-                curr_stat = False
+        for i in range(0, len(self.angles), epoch_len):
+            self.rolling_mean.append(statistics.mean(self.angles[i:i+epoch_len]))
 
-        # Take out the first and last entries since there is a chance the sensor was not on the person
-        start_array = start_array[1:-2]
-        end_array = end_array[1:-1]
+        for i in self.rolling_mean:
+            if i < 0.1:
+                i = 0
 
-        new_start = []
-        new_end = []
-        for i in range(len(start_array) - 1):
-            if end_array[i] - start_array[i] > mins1 * 60 * 300:
-                new_start.append(start_array[i])
-                new_end.append(end_array[i])
-        print("After Duration check: %i gaps remaining" % len(new_start))
+        i = 0
+        while i < len(self.rolling_mean):
+            if self.rolling_mean[i] < 0.1:
+                j = i
+                while self.rolling_mean[j] < 0.1:
+                    j += 1
 
-        # Overlapping Window Check
-        pre_process_start = []
-        pre_process_end = []
-        for i in range(len(new_start) - 1):
-            if new_end[i + 1] >= new_start[i]:
-                pre_process_start.append(new_start[i])
-                pre_process_end.append(new_end[i])
-        print("After Overlapping Window Checks: %i gaps remaining" % len(pre_process_start))
+                if j-i > (window_len * 60 * 75 // epoch_len):
+                    start_indices.append(i)
+                    end_indices.append(j)
+                i = j
+            elif self.rolling_mean[i] > 0.9:
+                j = i
+                while self.rolling_mean[j] > 0.9:
+                    j += 1
 
-        processed_start = []
-        processed_end = []
-        for i in range(len(pre_process_start) - 1):
-            if pre_process_start[i + 1] - pre_process_end[i] > mins2 * 60 * 300:
-                processed_start.append(pre_process_start[i])
-                processed_end.append(pre_process_end[i])
-        print("After Ending Window Check: %i gaps remaining" % len(processed_start))
+                if j-i > (window_len * 60 * 75 // epoch_len):
+                    start_indices.append(i)
+                    end_indices.append(j)
+                i = j
 
-        non_wear_start = []
-        non_wear_end = []
-        curr_temps = []
+            i += 1
 
+        processed_start = [i * epoch_len for i in start_indices]
+        processed_end = [i * epoch_len for i in end_indices]
+
+        self.processed_start = processed_start
+        self.processed_end = processed_end
+
+        # Temperature based checking
         for i in range(len(processed_start)):
             start_index = processed_start[i] // 300
-            end_index = processed_end[i] // 300
-            indices = np.array([j for j in range(start_index, end_index, 5)])
-            curr_temps = np.array(self.thermometer.temperatures[start_index:end_index:5])
+            end_index = start_index + ((self.accelerometer.frequency * window_len * 60) // 300)
+            indices = np.array([j for j in range(start_index, end_index)])
+            curr_temps = np.array(self.thermometer.temperatures[start_index:end_index])
             m = (statistics.mean(curr_temps) * statistics.mean(indices) - statistics.mean(curr_temps * indices))
 
-            if m > 20:
-                non_wear_start.append(processed_start[i])
-                non_wear_end.append(processed_end[i])
+            if m > 5:
+                self.non_wear_starts.append(processed_start[i])
+                self.non_wear_ends.append(processed_end[i])
 
-        self.non_wear_starts = non_wear_start
-        self.non_wear_ends = non_wear_end
+
+# ======================================== HELPFUL FUNCTIONS ========================================
+def bandpass_filter(dataset, lowcut, highcut, frequency, filter_order):
+    # Filter characteristics
+    nyquist_freq = 0.5 * frequency
+    low = lowcut / nyquist_freq
+    high = highcut / nyquist_freq
+    b, a = butter(filter_order, [low, high], btype="band")
+    y = filtfilt(b, a, dataset)
+    return y
+
+
+def lowpass_filter(dataset, lowcut, signal_freq, filter_order):
+    """Method that creates bandpass filter to ECG data."""
+    # Filter characteristics
+    nyquist_freq = 0.5 * signal_freq
+    low = lowcut / nyquist_freq
+    b, a = butter(filter_order, low, btype="low")
+    y = filtfilt(b, a, dataset)
+    return y
+
+
+def highpass_filter(dataset, highcut, signal_freq, filter_order):
+    """Method that creates bandpass filter to ECG data."""
+    # Filter characteristics
+    nyquist_freq = 0.5 * signal_freq
+    high = highcut / nyquist_freq
+    b, a = butter(filter_order, high, btype="high")
+    y = filtfilt(b, a, dataset)
+    return y
