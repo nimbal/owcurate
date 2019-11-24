@@ -264,20 +264,46 @@ class GENEActiv:
             if self.metadata["time_shift"] > 0:
                 # We need to remove every nth value (n = remove_counter)
                 self.x = np.delete(self.x,
-                                   [int(self.remove_counter * i) for i in range(int(len(self.x) / self.remove_counter))])
+                                   [int(self.remove_counter * i) for i in
+                                    range(int(len(self.x) / self.remove_counter))])
+
                 self.y = np.delete(self.y,
-                                   [int(self.remove_counter * i) for i in range(int(len(self.y) / self.remove_counter))])
+                                   [int(self.remove_counter * i) for i in
+                                    range(int(len(self.y) / self.remove_counter))])
+
                 self.z = np.delete(self.z,
-                                   [int(self.remove_counter * i) for i in range(int(len(self.z) / self.remove_counter))])
+                                   [int(self.remove_counter * i) for i in
+                                    range(int(len(self.z) / self.remove_counter))])
+
+                self.light = np.delete(self.light,
+                                       [int(self.remove_counter * i) for i in
+                                        range(int(len(self.light) / self.remove_counter))])
+
+                self.button = np.delete(self.button,
+                                        [int(self.remove_counter * i) for i in
+                                         range(int(len(self.button) / self.remove_counter))])
 
             else:
                 # We need to add a 0 value every remove_counter indices
                 self.x = np.insert(self.x,
-                                   [int(self.remove_counter * i) for i in range(int(len(self.x) / self.remove_counter))], 0)
+                                   [int(self.remove_counter * i) for i in
+                                    range(int(len(self.x) / self.remove_counter))], 0)
+
                 self.y = np.insert(self.y,
-                                   [int(self.remove_counter * i) for i in range(int(len(self.y) / self.remove_counter))], 0)
+                                   [int(self.remove_counter * i) for i in
+                                    range(int(len(self.y) / self.remove_counter))], 0)
+
                 self.z = np.insert(self.z,
-                                   [int(self.remove_counter * i) for i in range(int(len(self.z) / self.remove_counter))], 0)
+                                   [int(self.remove_counter * i) for i in
+                                    range(int(len(self.z) / self.remove_counter))], 0)
+
+                self.light = np.insert(self.light,
+                                       [int(self.remove_counter * i) for i in
+                                        range(int(len(self.light) / self.remove_counter))], 0)
+
+                self.button = np.insert(self.button,
+                                        [int(self.remove_counter * i) for i in
+                                         range(int(len(self.button) / self.remove_counter))], 0)
             self.time_shifted = True
         else:
             print("Times have already been shifted. To shift again, run with param force=True")
