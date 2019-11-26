@@ -44,7 +44,7 @@ class Sensor:
     def plot_accelerometer(self):
         fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
 
-    def non_wear_accel_temp(self, epoch_duration=5, window_len=5):
+    def non_wear_accel_temp(self, window_len=5, mins=5):
         """
         This method calculates non-wear for any given GENEActiv device.
         Non-wear is characterized by extended periods of inactivity in accelerometer signal, paired by
@@ -64,68 +64,59 @@ class Sensor:
             raise Exception("Thermometer has not been initialized")
 
         # ==================== Variable declaration and initialization
-        epoch_len = self.accelerometer.frequency * epoch_duration
-        self.angles = [0 for i in range(len(self.accelerometer.x))]
-        self.rolling_mean = []
+        epoch_len = self.accelerometer.frequency * window_len
+        angles = []
+        angles_diff = []
         start_indices = []
         end_indices = []
+        x = []
+        y = []
+        z = []
         curr_stat = False
 
         # ==================== Main
         # Finding angle of accelerometer, using the "Novel way to determine sleep" method
         # Preliminary accelerometer-based checking
-        for i in range(len(self.accelerometer.x)):
-            self.angles[i] = 2 * abs(math.atan(self.accelerometer.z[i] /
-                                          (math.sqrt(math.pow(self.accelerometer.x[i], 2) +
-                                                     math.pow(self.accelerometer.y[i], 2))))) / math.pi
 
-        for i in range(0, len(self.angles), epoch_len):
-            self.rolling_mean.append(statistics.mean(self.angles[i:i+epoch_len]))
+        # Gets median values for each period in the rolling window
+        for i in range(0, len(self.accelerometer.x) - epoch_len, epoch_len):
+            x.append(statistics.median(self.accelerometer.x[i:i + epoch_len]))
+            y.append(statistics.median(self.accelerometer.y[i:i + epoch_len]))
+            z.append(statistics.median(self.accelerometer.z[i:i + epoch_len]))
 
-        for i in self.rolling_mean:
-            if i < 0.1:
-                i = 0
+        # Gets angles for each period in the rolling window
+        for i in range(len(x)):
+            angles.append(math.atan(z[i] / math.sqrt(math.pow(x[i], 2) + math.pow(y[i], 2))) * 180 / math.pi)
+
+        # Differentiates angles with respect to next sample
+        angles_diff = np.diff(angles)
+        angles_diff = np.append(angles_diff, 0)
 
         i = 0
-        while i < len(self.rolling_mean):
-            if self.rolling_mean[i] < 0.1:
+        while i < len(angles_diff):
+            if angles_diff[i] < 5:
                 j = i
-                while self.rolling_mean[j] < 0.1:
+                while angles_diff[j] < 5 and j < len(angles_diff):
                     j += 1
 
-                if j-i > (window_len * 60 * 75 // epoch_len):
-                    start_indices.append(i)
-                    end_indices.append(j)
-                i = j
-            elif self.rolling_mean[i] > 0.9:
-                j = i
-                while self.rolling_mean[j] > 0.9:
-                    j += 1
-
-                if j-i > (window_len * 60 * 75 // epoch_len):
-                    start_indices.append(i)
-                    end_indices.append(j)
+                if j-i > (mins * 60 * 75 // epoch_len):
+                    start_indices.append(i * epoch_len)
+                    end_indices.append(j * epoch_len)
                 i = j
 
             i += 1
 
-        processed_start = [i * epoch_len for i in start_indices]
-        processed_end = [i * epoch_len for i in end_indices]
-
-        self.processed_start = processed_start
-        self.processed_end = processed_end
-
         # Temperature based checking
-        for i in range(len(processed_start)):
-            start_index = processed_start[i] // 300
+        for i in range(len(start_indices)):
+            start_index = start_indices[i] // 300
             end_index = start_index + ((self.accelerometer.frequency * window_len * 60) // 300)
             indices = np.array([j for j in range(start_index, end_index)])
             curr_temps = np.array(self.thermometer.temperatures[start_index:end_index])
             m = (statistics.mean(curr_temps) * statistics.mean(indices) - statistics.mean(curr_temps * indices))
 
             if m > 5:
-                self.non_wear_starts.append(processed_start[i])
-                self.non_wear_ends.append(processed_end[i])
+                self.non_wear_starts.append(start_indices[i])
+                self.non_wear_ends.append(end_indices[i])
 
 
 # ======================================== HELPFUL FUNCTIONS ========================================
