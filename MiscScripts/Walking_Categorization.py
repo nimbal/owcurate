@@ -113,21 +113,33 @@ ankle_z = []
 
 
 for i in range(len(starttimes)):
-    ankle_x.extend(LA.accelerometer.x[np.where(LA_times == starttimes[i])[0][0]:np.where(LA_times == endtimes[i])[0][0]])
-    ankle_y.extend(LA.accelerometer.y[np.where(LA_times == starttimes[i])[0][0]:np.where(LA_times == endtimes[i])[0][0]])
-    ankle_z.extend(LA.accelerometer.z[np.where(LA_times == starttimes[i])[0][0]:np.where(LA_times == endtimes[i])[0][0]])
+    ankle_x.extend(LA.accelerometer.x[np.where(LA_times == starttimes[i])[0][0]:
+                                      np.where(LA_times == endtimes[i])[0][0]])
+    ankle_y.extend(LA.accelerometer.y[np.where(LA_times == starttimes[i])[0][0]:
+                                      np.where(LA_times == endtimes[i])[0][0]])
+    ankle_z.extend(LA.accelerometer.z[np.where(LA_times == starttimes[i])[0][0]:
+                                      np.where(LA_times == endtimes[i])[0][0]])
 
-    ankle_x.extend(RA.accelerometer.x[np.where(RA_times == starttimes[i])[0][0]:np.where(RA_times == endtimes[i])[0][0]])
-    ankle_y.extend(RA.accelerometer.y[np.where(RA_times == starttimes[i])[0][0]:np.where(RA_times == endtimes[i])[0][0]])
-    ankle_z.extend(RA.accelerometer.z[np.where(RA_times == starttimes[i])[0][0]:np.where(RA_times == endtimes[i])[0][0]])
+    ankle_x.extend(RA.accelerometer.x[np.where(RA_times == starttimes[i])[0][0]:
+                                      np.where(RA_times == endtimes[i])[0][0]])
+    ankle_y.extend(RA.accelerometer.y[np.where(RA_times == starttimes[i])[0][0]:
+                                      np.where(RA_times == endtimes[i])[0][0]])
+    ankle_z.extend(RA.accelerometer.z[np.where(RA_times == starttimes[i])[0][0]:
+                                      np.where(RA_times == endtimes[i])[0][0]])
 
-    wrist_x.extend(LW.accelerometer.x[np.where(LW_times == starttimes[i])[0][0]:np.where(LW_times == endtimes[i])[0][0]])
-    wrist_y.extend(LW.accelerometer.y[np.where(LW_times == starttimes[i])[0][0]:np.where(LW_times == endtimes[i])[0][0]])
-    wrist_z.extend(LW.accelerometer.z[np.where(LW_times == starttimes[i])[0][0]:np.where(LW_times == endtimes[i])[0][0]])
+    wrist_x.extend(LW.accelerometer.x[np.where(LW_times == starttimes[i])[0][0]:
+                                      np.where(LW_times == endtimes[i])[0][0]])
+    wrist_y.extend(LW.accelerometer.y[np.where(LW_times == starttimes[i])[0][0]:
+                                      np.where(LW_times == endtimes[i])[0][0]])
+    wrist_z.extend(LW.accelerometer.z[np.where(LW_times == starttimes[i])[0][0]:
+                                      np.where(LW_times == endtimes[i])[0][0]])
 
-    wrist_x.extend(RW.accelerometer.x[np.where(RW_times == starttimes[i])[0][0]:np.where(RW_times == endtimes[i])[0][0]])
-    wrist_y.extend(RW.accelerometer.y[np.where(RW_times == starttimes[i])[0][0]:np.where(RW_times == endtimes[i])[0][0]])
-    wrist_z.extend(RW.accelerometer.z[np.where(RW_times == starttimes[i])[0][0]:np.where(RW_times == endtimes[i])[0][0]])
+    wrist_x.extend(RW.accelerometer.x[np.where(RW_times == starttimes[i])[0][0]:
+                                      np.where(RW_times == endtimes[i])[0][0]])
+    wrist_y.extend(RW.accelerometer.y[np.where(RW_times == starttimes[i])[0][0]:
+                                      np.where(RW_times == endtimes[i])[0][0]])
+    wrist_z.extend(RW.accelerometer.z[np.where(RW_times == starttimes[i])[0][0]:
+                                      np.where(RW_times == endtimes[i])[0][0]])
 
 
 Wrist_X = []
@@ -162,21 +174,33 @@ ankle_y = []
 ankle_z = []
 
 for i in range(len(starttimes_nonwalk) - 1):
-    ankle_x.extend(LA.accelerometer.x[np.where(LA_times == endtimes_nonwalk[i])[0][0]:np.where(LA_times == starttimes_nonwalk[i + 1])[0][0]])
-    ankle_y.extend(LA.accelerometer.y[np.where(LA_times == endtimes_nonwalk[i])[0][0]:np.where(LA_times == starttimes_nonwalk[i + 1])[0][0]])
-    ankle_z.extend(LA.accelerometer.z[np.where(LA_times == endtimes_nonwalk[i])[0][0]:np.where(LA_times == starttimes_nonwalk[i + 1])[0][0]])
+    ankle_x.extend(LA.accelerometer.x[np.where(LA_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(LA_times == starttimes_nonwalk[i + 1])[0][0]])
+    ankle_y.extend(LA.accelerometer.y[np.where(LA_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(LA_times == starttimes_nonwalk[i + 1])[0][0]])
+    ankle_z.extend(LA.accelerometer.z[np.where(LA_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(LA_times == starttimes_nonwalk[i + 1])[0][0]])
 
-    ankle_x.extend(RA.accelerometer.x[np.where(RA_times == endtimes_nonwalk[i])[0][0]:np.where(RA_times == starttimes_nonwalk[i + 1])[0][0]])
-    ankle_y.extend(RA.accelerometer.y[np.where(RA_times == endtimes_nonwalk[i])[0][0]:np.where(RA_times == starttimes_nonwalk[i + 1])[0][0]])
-    ankle_z.extend(RA.accelerometer.z[np.where(RA_times == endtimes_nonwalk[i])[0][0]:np.where(RA_times == starttimes_nonwalk[i + 1])[0][0]])
+    ankle_x.extend(RA.accelerometer.x[np.where(RA_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(RA_times == starttimes_nonwalk[i + 1])[0][0]])
+    ankle_y.extend(RA.accelerometer.y[np.where(RA_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(RA_times == starttimes_nonwalk[i + 1])[0][0]])
+    ankle_z.extend(RA.accelerometer.z[np.where(RA_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(RA_times == starttimes_nonwalk[i + 1])[0][0]])
 
-    wrist_x.extend(LW.accelerometer.x[np.where(LW_times == endtimes_nonwalk[i])[0][0]:np.where(LW_times == starttimes_nonwalk[i + 1])[0][0]])
-    wrist_y.extend(LW.accelerometer.y[np.where(LW_times == endtimes_nonwalk[i])[0][0]:np.where(LW_times == starttimes_nonwalk[i + 1])[0][0]])
-    wrist_z.extend(LW.accelerometer.z[np.where(LW_times == endtimes_nonwalk[i])[0][0]:np.where(LW_times == starttimes_nonwalk[i + 1])[0][0]])
+    wrist_x.extend(LW.accelerometer.x[np.where(LW_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(LW_times == starttimes_nonwalk[i + 1])[0][0]])
+    wrist_y.extend(LW.accelerometer.y[np.where(LW_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(LW_times == starttimes_nonwalk[i + 1])[0][0]])
+    wrist_z.extend(LW.accelerometer.z[np.where(LW_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(LW_times == starttimes_nonwalk[i + 1])[0][0]])
 
-    wrist_x.extend(RW.accelerometer.x[np.where(RW_times == endtimes_nonwalk[i])[0][0]:np.where(RW_times == starttimes_nonwalk[i + 1])[0][0]])
-    wrist_y.extend(RW.accelerometer.y[np.where(RW_times == endtimes_nonwalk[i])[0][0]:np.where(RW_times == starttimes_nonwalk[i + 1])[0][0]])
-    wrist_z.extend(RW.accelerometer.z[np.where(RW_times == endtimes_nonwalk[i])[0][0]:np.where(RW_times == starttimes_nonwalk[i + 1])[0][0]])
+    wrist_x.extend(RW.accelerometer.x[np.where(RW_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(RW_times == starttimes_nonwalk[i + 1])[0][0]])
+    wrist_y.extend(RW.accelerometer.y[np.where(RW_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(RW_times == starttimes_nonwalk[i + 1])[0][0]])
+    wrist_z.extend(RW.accelerometer.z[np.where(RW_times == endtimes_nonwalk[i])[0][0]:
+                                      np.where(RW_times == starttimes_nonwalk[i + 1])[0][0]])
 
 
 for i in range(0, len(wrist_x) - 300, 150):
@@ -203,10 +227,10 @@ Ankle_y = np.array(Ankle_y)
 
 
 # ======================================== UNCOMMENT TO USE WRIST DATA
-# X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Wrist_X, Wrist_y, test_size=0.3)
+# X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Wrist_X, Wrist_y, test_size=0.25)
 
 # ======================================== UNCOMMENT TO USE ANKLE DATA
-X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Ankle_X, Ankle_y, test_size=0.3)
+X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Ankle_X, Ankle_y, test_size=0.25)
 
 
 # ======================================== MAKING THE MODEL
@@ -214,7 +238,8 @@ X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Ankl
 model = keras.Sequential([
     keras.layers.Flatten(input_shape=(300, 3)),
     keras.layers.Dense(128, activation='relu'),
-    keras.layers.Dense(10, activation='softmax')
+    keras.layers.Dense(10, activation='relu'),
+    keras.layers.Dense(2, activation='softmax'),
 ])
 
 
@@ -222,7 +247,7 @@ model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=
 
 
 # ======================================== TRAINING THE MODEL
-model.fit(X_train, y_train, epochs=10)
+model.fit(X_train, y_train, epochs=50)
 
 
 
