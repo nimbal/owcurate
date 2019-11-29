@@ -1,57 +1,15 @@
 # ======================================== IMPORTS
 from Subject import *
 from Files.Converters import *
-import peakutils
-from scipy.signal import butter, filtfilt
 import matplotlib
-import pandas as pd
 import numpy as np
 import sklearn
-from sklearn.neighbors import KNeighborsClassifier
-import tensorflow as tf
 import keras
-from keras.models import Sequential
-from keras import layers
-from sklearn import preprocessing, linear_model
 
 # ================================================================================================
 # ======================================== PREPARING DATA ========================================
 # ================================================================================================
 matplotlib.use("MacOSX")
-
-
-# ======================================== DEFINITIONS
-
-# ==================== Various methods for easily using filters
-def bandpass_filter(dataset, lowcut, highcut, frequency, filter_order):
-    # Filter characteristics
-    nyquist_freq = 0.5 * frequency
-    low = lowcut / nyquist_freq
-    high = highcut / nyquist_freq
-    b, a = butter(filter_order, [low, high], btype="band")
-    y = filtfilt(b, a, dataset)
-    return y
-
-
-def lowpass_filter(dataset, lowcut, signal_freq, filter_order):
-    """Method that creates bandpass filter to ECG data."""
-    # Filter characteristics
-    nyquist_freq = 0.5 * signal_freq
-    low = lowcut / nyquist_freq
-    b, a = butter(filter_order, low, btype="low")
-    y = filtfilt(b, a, dataset)
-    return y
-
-
-def highpass_filter(dataset, highcut, signal_freq, filter_order):
-    """Method that creates bandpass filter to ECG data."""
-    # Filter characteristics
-    nyquist_freq = 0.5 * signal_freq
-    high = highcut / nyquist_freq
-    b, a = butter(filter_order, high, btype="high")
-    y = filtfilt(b, a, dataset)
-    return y
-
 
 # ======================================== VARIABLE DECLARATION AND INITIALIZATION
 
@@ -202,7 +160,6 @@ for i in range(len(starttimes_nonwalk) - 1):
     wrist_z.extend(RW.accelerometer.z[np.where(RW_times == endtimes_nonwalk[i])[0][0]:
                                       np.where(RW_times == starttimes_nonwalk[i + 1])[0][0]])
 
-
 for i in range(0, len(wrist_x) - 300, 150):
     Wrist_X.append(np.array([
         np.array(wrist_x[i:i+300]),
@@ -227,19 +184,31 @@ Ankle_y = np.array(Ankle_y)
 
 
 # ======================================== UNCOMMENT TO USE WRIST DATA
-# X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Wrist_X, Wrist_y, test_size=0.25)
+X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Wrist_X, Wrist_y, test_size=0.25)
 
 # ======================================== UNCOMMENT TO USE ANKLE DATA
 X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Ankle_X, Ankle_y, test_size=0.25)
 
+X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Wrist_X, Wrist_y, test_size=0.25)
 
 # ======================================== MAKING THE MODEL
 
-model = keras.Sequential([
+model_OLD = keras.Sequential([
     keras.layers.Flatten(input_shape=(300, 3)),
     keras.layers.Dense(128, activation='relu'),
     keras.layers.Dense(10, activation='relu'),
     keras.layers.Dense(2, activation='softmax'),
+])
+
+model = keras.Sequential([
+    keras.layers.Conv1D(64, 3, activation='relu', input_shape=(300, 3)),
+    keras.layers.Conv1D(64, 3, activation='relu'),
+    keras.layers.MaxPool1D(3),
+    keras.layers.Conv1D(128, 3, activation='relu'),
+    keras.layers.Conv1D(128, 3, activation='relu'),
+    keras.layers.GlobalAveragePooling1D(),
+    keras.layers.Dropout(0.3),
+    keras.layers.Dense(2, activation="softmax")
 ])
 
 
@@ -249,37 +218,26 @@ model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=
 # ======================================== TRAINING THE MODEL
 model.fit(X_train, y_train, epochs=50)
 
-
-
-
 # ======================================== TESTING THE MODEL
 test_loss, test_acc = model.evaluate(X_test, y_test, verbose=2)
 print(test_acc)
 
 predictions = model.predict(X_test)
 
-for i in range(0, len(X_test), 100):
+for i in range(0, len(X_test), 25):
     fig, ax = plt.subplots()
     ax.plot(X_test[i])
     fig.suptitle("Predicted: %i   Actual: %i" % (np.argmax(predictions[i]), y_test[i]))
 
 
 # ======================================== VALIDATING MODEL USING SAMPLE DATA
-
 SAMPLE_DATA = []
-for i in range(0, len(LA.accelerometer.x) - 300, 300):
+for i in range(0, len(LW.accelerometer.x) - 300, 300):
     SAMPLE_DATA.append(np.array([
-        np.array(LA.accelerometer.x[i:i+300]),
-        np.array(LA.accelerometer.y[i:i+300]),
-        np.array(LA.accelerometer.z[i:i+300])
+        np.array(LW.accelerometer.x[i:i+300]),
+        np.array(LW.accelerometer.y[i:i+300]),
+        np.array(LW.accelerometer.z[i:i+300])
     ]).swapaxes(0, 1))
 
 SAMPLE_DATA = np.array(SAMPLE_DATA)
-
-
-
-
-
-
-
 
