@@ -189,7 +189,6 @@ X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Wris
 # ======================================== UNCOMMENT TO USE ANKLE DATA
 X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Ankle_X, Ankle_y, test_size=0.25)
 
-X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Wrist_X, Wrist_y, test_size=0.25)
 
 # ======================================== MAKING THE MODEL
 
