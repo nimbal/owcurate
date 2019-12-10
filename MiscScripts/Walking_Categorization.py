@@ -2,8 +2,10 @@
 from Subject import *
 from Files.Converters import *
 import matplotlib
+import tensorflow as tf
 import numpy as np
 import sklearn
+from sklearn.model_selection import train_test_split
 import keras
 
 # ================================================================================================
@@ -184,20 +186,13 @@ Ankle_y = np.array(Ankle_y)
 
 
 # ======================================== UNCOMMENT TO USE WRIST DATA
-X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Wrist_X, Wrist_y, test_size=0.25)
+# X_train, X_test, y_train, y_test = train_test_split(Wrist_X, Wrist_y, test_size=0.25)
 
 # ======================================== UNCOMMENT TO USE ANKLE DATA
-X_train, X_test, y_train, y_test = sklearn.model_selection.train_test_split(Ankle_X, Ankle_y, test_size=0.25)
+X_train, X_test, y_train, y_test = train_test_split(Ankle_X, Ankle_y, test_size=0.25)
 
 
 # ======================================== MAKING THE MODEL
-
-model_OLD = keras.Sequential([
-    keras.layers.Flatten(input_shape=(300, 3)),
-    keras.layers.Dense(128, activation='relu'),
-    keras.layers.Dense(10, activation='relu'),
-    keras.layers.Dense(2, activation='softmax'),
-])
 
 model = keras.Sequential([
     keras.layers.Conv1D(64, 3, activation='relu', input_shape=(300, 3)),
@@ -231,11 +226,11 @@ for i in range(0, len(X_test), 25):
 
 # ======================================== VALIDATING MODEL USING SAMPLE DATA
 SAMPLE_DATA = []
-for i in range(0, len(LW.accelerometer.x) - 300, 300):
+for i in range(0, len(LA.accelerometer.x) - 300, 300):
     SAMPLE_DATA.append(np.array([
-        np.array(LW.accelerometer.x[i:i+300]),
-        np.array(LW.accelerometer.y[i:i+300]),
-        np.array(LW.accelerometer.z[i:i+300])
+        np.array(LA.accelerometer.x[i:i+300]),
+        np.array(LA.accelerometer.y[i:i+300]),
+        np.array(LA.accelerometer.z[i:i+300])
     ]).swapaxes(0, 1))
 
 SAMPLE_DATA = np.array(SAMPLE_DATA)

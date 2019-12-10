@@ -7,70 +7,119 @@
 
 # ======================================== IMPORTS
 from Files.Converters import *
-from Sensor import *
-from Subject import *
+from Sensor.Sensor import *
+import matplotlib.pyplot as plt
+from pandas.plotting import register_matplotlib_converters
 import statistics
+import math
+
+register_matplotlib_converters()
+
+# ======================================== VARIABLE DECLARATION AND INITIALIZATION
+S = Sensor()
+
+window_len = 375
+
+rolling_x = []
+rolling_y = []
+rolling_z = []
+angles = []
+avg_angles = []
+non_wear_starts = []
+non_wear_ends = []
+sleep_starts = []
+sleep_ends = []
+
+start_indices = []
+end_indices = []
+
+EDFToSensor(S, "/Users/nimbal/Documents/OND07/EDF/Accelerometer/OND07_WTL_3031_02_GA_LWrist_Accelerometer.EDF", "",
+            "/Users/nimbal/Documents/OND07/EDF/Temperature/OND07_WTL_3031_02_GA_LWrist_Temperature.EDF",
+            "/Users/nimbal/Documents/OND07/EDF/Light/OND07_WTL_3031_02_GA_LWrist_Light.EDF",
+            "/Users/nimbal/Documents/OND07/EDF/Button/OND07_WTL_3031_02_GA_LWrist_Button.EDF")
+
+times = S.generate_times(75, len(S.accelerometer.x))
+
+print("Finding Median Values on windows")
+
+for i in range(0, len(S.accelerometer.x) - window_len, 75):
+    rolling_x.append(statistics.median(S.accelerometer.x[i: i + window_len]))
+    rolling_y.append(statistics.median(S.accelerometer.y[i: i + window_len]))
+    rolling_z.append(statistics.median(S.accelerometer.z[i: i + window_len]))
+    print("%.5f" % (i / (len(S.accelerometer.x) - window_len)))
+
+for i in range(len(rolling_x)):
+    angles.append(
+        math.atan(rolling_z[i] / math.sqrt(math.pow(rolling_x[i], 2) + math.pow(rolling_y[i], 2))) * 180 / math.pi)
+
+for i in range(0, len(angles), 5):
+    avg_angles.append(statistics.mean(angles[i:i + 5]))
+
+angles_diff = np.diff(avg_angles)
+angles_diff = np.append(angles_diff, 0)
+
+i = 0
+while i < len(angles_diff) - 1:
+    if angles_diff[i] < 5:
+        j = i
+        while angles_diff[j] < 5 and j < len(angles_diff) - 1:
+            j += 1
+        if j - i > (5 * 60):
+            start_indices.append(i * window_len)
+            end_indices.append(j * window_len)
+        i = j
+    i += 1
+
+fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, sharex=True)
 
 
-class SleepIntervals:
-    # ======================================== VARIABLE DECLARATION AND INITIALIZATION
-    def __init__(self):
-        self.S = Sensor()
-        self.path = ""
-        self.rolling_x = []
-        self.rolling_y = []
-        self.rolling_z = []
-        self.angles = []
-        self.avg_angles = []
-        self.angles_diff = []
-        
-        self.window_len = 0
+ax1.plot(times, S.accelerometer.x)
+ax2.plot([times[300 * i] for i in range(len(S.thermometer.temperatures) - 1)], S.thermometer.temperatures[:-1])
 
 
-    def load_edf(self, path_to_accelerometer):
-        self.path = path_to_accelerometer
-        EDFToSensor(self.S, path_to_accelerometer, "", "", "", "")
+sleep_starts = []
+sleep_ends = []
+
+# Minimum sleep bout of 30 mins
+for i in range(len(start_indices)):
+    if end_indices[i] - start_indices[i] > (30 * 60 * 75):
+        sleep_starts.append(start_indices[i])
+        sleep_ends.append(end_indices[i])
 
 
-
-    def VanHees(self):
-        """
-        Step 1 of the Van Hees Algorithm
-
-        Returns:
-
-        """
-        self.window_len = self.S.accelerometer.frequency * 5
-
-        # "where ax, ay, az are the median values of the three orthogonally positioned raw acceleration
-        # sensors derived based on a rolling five second time window"
-        for i in range(0, len(self.S.accelerometer.x) - self.window_len):
-            self.rolling_x.append(statistics.median(self.S.accelerometer.x[i: i + self.window_len]))
-            self.rolling_y.append(statistics.median(self.S.accelerometer.y[i: i + self.window_len]))
-            self.rolling_z.append(statistics.median(self.S.accelerometer.z[i: i + self.window_len]))
-
-        # "angle = tan^-1 (az / sqrt(ax^2 + ay^2)) * 180 / pi
-        for i in range(len(self.rolling_x)):
-            self.angles.append(math.atan(self.rolling_z[i] /
-                                         math.sqrt(math.pow(self.rolling_x[i], 2) +
-                                                   math.pow(self.rolling_y[i], 2))) * 180 / math.pi)
-
-        # "Next, estimated arm angles were averaged per 5 second epoch"
-        for i in range(0, len(self.angles), self.window_len):
-            self.avg_angles.append(statistics.mean(self.angles[i:i + self.window_len]))
-
-        # Change in angles to determine "periods of time during which there was non change larger than 5 degrees
-        # over the least 5 minutes
-        for i in range(0, len(self.avg_angles), self.window_len):
-            self.angles_diff.append(self.avg_angles[i+1] - self.avg_angles[i])
-
-        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True)
-
-        ax1.plot(self.S.accelerometer.x)
-        ax2.plot([self.window_len * i for i in range(len(self.avg_angles))], self.avg_angles)
-        ax3.plot([self.window_len * i for i in range(len(self.angles_diff))], self.angles_diff)
+# This is for the start and end periods
+"""start = []
+end = []
+j = 0
+for i in range(len(sleep_starts) - 1 - j):
+    print(i)
+    if sleep_starts[i+1] - sleep_ends[i] < (60 * 60 * 75):
+        sleep_starts.remove(sleep_starts[i+1])
+        sleep_ends.remove(sleep_ends[i])
+        j += 1
+        i -= 1"""
 
 
+for i in range(len(start_indices)):
+    start_index = start_indices[i] // 300
+    end_index = start_index + 75  # 75 DERIVED FROM N_MINS * SECONDS_PER_MIN * SAMPLES_PER_SECOND // 300
+    indices = np.array([j for j in range(start_index, end_index)])
+    curr_temps = np.array(S.thermometer.temperatures[start_index:end_index])
+    m = (statistics.mean(curr_temps) * statistics.mean(indices) - statistics.mean(curr_temps * indices))
+    ax2.plot(times[start_index * 300], S.thermometer.temperatures[start_index], "m.")
+    ax2.plot(times[end_index * 300], S.thermometer.temperatures[end_index], "g.")
+
+    if m > 8.75:
+        non_wear_starts.append(start_indices[i])
+        non_wear_ends.append(end_indices[i])
+    else:
+        sleep_starts.append(start_indices[i])
+        sleep_ends.append(end_indices[i])
 
 
+for i in non_wear_starts:
+    ax3.axvline(times[i], -10, 10, color='black')
+
+for i in non_wear_ends:
+    ax3.axvline(times[i], -10, 10, color="red")
 
