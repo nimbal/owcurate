@@ -38,10 +38,11 @@ ACTUAL_NON_WEAR_ENDS = [datetime.datetime(year=2019, month=11, day=18, hour=11, 
                         datetime.datetime(year=2019, month=11, day=19, hour=15, minute=34, second=13),
                         datetime.datetime(year=2019, month=11, day=19, hour=23, minute=2, second=2)]
 
+
 # ======================================== COMPARISON OF VAN HEES AND DING ALGORITHMS
 S.accelerometer.calculate_svms()
 
-# Using VanHees without temperature checking
+# Using VanHees
 S.VanHeesNonWear()
 S.Check_Temperature()
 VanHeesStarts_NT = S.start_indices
@@ -49,7 +50,7 @@ VanHeesEnds_NT = S.end_indices
 VanHeesStarts_T = S.non_wear_starts
 VanheesEnds_T = S.non_wear_ends
 
-
+# Using Ding
 S.NonWear()
 S.Check_Temperature()
 DingStarts_NT = S.start_indices
@@ -58,6 +59,7 @@ DingStarts_T = S.non_wear_starts
 DingEnds_T = S.non_wear_ends
 
 
+# ======================================== GRAPHICAL OUTPUT ========================================
 sns.set()
 fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(12, 8), sharex=True)
 

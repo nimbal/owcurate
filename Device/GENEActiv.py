@@ -1,13 +1,20 @@
+# ====================================================================================================
+# ==================== THIS SCRIPT CONTAINS THE UNIVERSAL GENEACTIV CLASS
+# ==================== DAVID DING
+# ==================== NEUROSCIENCE BALANCE AND MOBILITY LABORATORY
+# ==================== UNIVERSITY OF WATERLOO
+# ====================================================================================================
 
 # ======================================== IMPORTS ========================================
 import numpy as np
 import datetime
-from os import listdir
-from os.path import isfile, join
 
 
 # ======================================== GENEACTIV CLASS ========================================
 class GENEActiv:
+    """
+    TODO: FINISH PDF SUMMARY FUNCTION (MANUAL INSPECTION FUNCTION)
+    """
     def __init__(self):
         self.metadata = {
             "serial_num": "",

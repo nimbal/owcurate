@@ -1,7 +1,8 @@
 # ====================================================================================================
-# DAVID DING
-# NOVEMBER 29TH 2019
-# PYTHON IMPLEMENTATION OF VAN HEES SLEEP DETECTION ALGORITHM WITHIN THE NIMBAL LAB
+# ==================== DAVID DING
+# ==================== NEUROSCIENCE BALANCE AND MOBILITY LABORATORY
+# ==================== UNIVERSITY OF WATERLOO
+# ==================== PYTHON IMPLEMENTATION OF VAN HEES SLEEP DETECTION ALGORITHM WITHIN THE NIMBAL LAB
 # ====================================================================================================
 
 
