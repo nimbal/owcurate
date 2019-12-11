@@ -168,7 +168,6 @@ class Sensor:
                 i = j
             i += 1
 
-
         # GAP COLLAPSING
         i = 0
         j = 0

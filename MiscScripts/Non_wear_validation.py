@@ -8,11 +8,12 @@ from Files.Converters import *
 from Sensor.Sensor import *
 import datetime
 from pandas.plotting import register_matplotlib_converters
+import seaborn as sns
 from matplotlib import style
 
+# ======================================== INITIALIZING CONSTANTS AND VARIABLES
 register_matplotlib_converters()
 S = Sensor()
-
 EDFToSensor(S, "/Users/nimbal/Desktop/Accelerometer/KW_NW_Validation_RW_Accelerometer.EDF", "",
             "/Users/nimbal/Desktop/Temperature/KW_NW_Validation_RW_Temperature.EDF",
             "/Users/nimbal/Desktop/Light/KW_NW_Validation_RW_Light.EDF",
@@ -20,6 +21,7 @@ EDFToSensor(S, "/Users/nimbal/Desktop/Accelerometer/KW_NW_Validation_RW_Accelero
 
 TIMES = S.generate_times(75, len(S.accelerometer.x))
 
+# ======================================== ARRAY OF ITEMS TO BE COMPARED AGAINST
 ACTUAL_NON_WEAR_STARTS = [datetime.datetime(year=2019, month=11, day=18, hour=11, minute=37, second=35),
                           datetime.datetime(year=2019, month=11, day=18, hour=15, minute=55, second=46),
                           datetime.datetime(year=2019, month=11, day=18, hour=19, minute=42, second=22),
@@ -36,6 +38,7 @@ ACTUAL_NON_WEAR_ENDS = [datetime.datetime(year=2019, month=11, day=18, hour=11, 
                         datetime.datetime(year=2019, month=11, day=19, hour=15, minute=34, second=13),
                         datetime.datetime(year=2019, month=11, day=19, hour=23, minute=2, second=2)]
 
+# ======================================== COMPARISON OF VAN HEES AND DING ALGORITHMS
 S.accelerometer.calculate_svms()
 
 # Using VanHees without temperature checking
@@ -55,7 +58,7 @@ DingStarts_T = S.non_wear_starts
 DingEnds_T = S.non_wear_ends
 
 
-
+sns.set()
 fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(3, 2, figsize=(12, 8), sharex=True)
 
 ax1.plot(TIMES, S.accelerometer.svms)
@@ -72,26 +75,20 @@ for i in ACTUAL_NON_WEAR_ENDS:
 
 for i in VanHeesStarts_NT:
     ax3.axvline(TIMES[i], color='black')
-
 for i in VanHeesEnds_NT:
     ax3.axvline(TIMES[i], color='red')
-
 for i in VanHeesStarts_T:
     ax5.axvline(TIMES[i], color='black')
-
 for i in VanheesEnds_T:
     ax5.axvline(TIMES[i], color='red')
 
 
 for i in DingStarts_NT:
     ax4.axvline(TIMES[i], color='black')
-
 for i in DingEnds_NT:
     ax4.axvline(TIMES[i], color='red')
-
 for i in DingStarts_T:
     ax6.axvline(TIMES[i], color='black')
-
 for i in DingEnds_T:
     ax6.axvline(TIMES[i], color='red')
 
