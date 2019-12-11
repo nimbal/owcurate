@@ -256,7 +256,7 @@ class GENEActivFile:
         # also append vs extend?? why np.array ??
 
         start = 1
-        end = 10000 #self.metadata["number_of_pages"]
+        end = self.metadata["number_of_pages"]
 
 
         for i in range(end): #******************************
