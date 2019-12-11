@@ -160,9 +160,7 @@ class GENEActivFile:
         
 
         if parse_data:
-            if not quiet: print("Parsing data ...")
             self.parse_data(calibrate = calibrate, correct_drift = correct_drift, quiet = quiet)
-
 
         if not quiet: print("Done reading file.")
     
@@ -178,22 +176,19 @@ class GENEActivFile:
                     Total number of bits in the operation
 
             Returns:
-                Integer value resulting from the twos compliment operation
+                page_data: Integer value resulting from the twos compliment operation
             """
             if (val & (1 << (bits - 1))) != 0:  # if sign bit is set e.g., 8bit: 128-255
                 val = val - (1 << bits)  # compute negative value
             return val
 
         def parse_page(page_hex):
-            """ This method processes the current line of "page" of data as defined by GENEActiv
+
+            """ This method processes the current page of data as defined by GENEActiv
 
             Args:
-                raw_hex: str
+                page_hex: str
                     String of Hexadecimal data to be parsed as per their descriptors
-                offsets: tuple
-                    Stores the offsets for the three channels in a tuple (x, y, z)
-                gains: tuple
-                    Stores the gains for the three channels in a tuple (x, y, z)
 
             Returns:
                 list of tuples : Each tuple will contain (x, y, z) samples for that time
@@ -201,15 +196,16 @@ class GENEActivFile:
             """
             page_data = []
 
-            ### ADD OPTION TO CALIBRATE HERE
-            x_offset = self.calibration_info["x-offset"]
-            y_offset = self.calibration_info["y-offset"]
-            z_offset = self.calibration_info["z-offset"]
-            x_gain = self.calibration_info["x-gain"]
-            y_gain = self.calibration_info["y-gain"]
-            z_gain = self.calibration_info["z-gain"]
-            volts = self.calibration_info["volts"]
-            lux = self.calibration_info["lux"]
+
+            if calibrate:
+                x_offset = self.calibration_info["x-offset"]
+                y_offset = self.calibration_info["y-offset"]
+                z_offset = self.calibration_info["z-offset"]
+                x_gain = self.calibration_info["x-gain"]
+                y_gain = self.calibration_info["y-gain"]
+                z_gain = self.calibration_info["z-gain"]
+                volts = self.calibration_info["volts"]
+                lux = self.calibration_info["lux"]
 
             #x_offset, y_offset, z_offset = offsets
             #x_gain, y_gain, z_gain = gains
@@ -234,12 +230,12 @@ class GENEActivFile:
                 #light = twos_comp(light, 10) # NOT NEEDED, not a signed integer? TEST TO SEE IF THIS FIXES HIGH VALUES??
 
 
-                ### ADD option to calibrate
-                # run the modifiers as prescribed in the GENEActiv documentation
-                x = (x * 100 - x_offset) / x_gain
-                y = (y * 100 - y_offset) / y_gain
-                z = (z * 100 - z_offset) / z_gain
-                light = (light * lux) / volts
+                # calibrate data
+                if calibrate:
+                    x = (x * 100 - x_offset) / x_gain
+                    y = (y * 100 - y_offset) / y_gain
+                    z = (z * 100 - z_offset) / z_gain
+                    light = (light * lux) / volts
 
                 page_data.append((x, y, z, light, button))
 
@@ -259,10 +255,14 @@ class GENEActivFile:
         # is this the most efficient way of storing and returning the data?? compare to my script?
         # also append vs extend?? why np.array ??
 
-        for i in range(self.metadata["number_of_pages"]): #******************************
+        start = 1
+        end = 10000 #self.metadata["number_of_pages"]
+
+
+        for i in range(end): #******************************
             if (i // 1000) * 1000 == i:
                 if not quiet:
-                    print("Current Progress: %f %%" % (100 * i / self.metadata["number_of_pages"]))
+                    print("Current Progress: %f %%" % (100 * i / end))
             page_data = parse_page(self.data_packet[(i * 10) + 9])
             temp.append(float(self.data_packet[(i * 10) + 5].split(":")[-1]))
             x.extend([page_data[j][0] for j in range(300)])
