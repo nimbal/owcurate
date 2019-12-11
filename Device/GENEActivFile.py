@@ -252,7 +252,7 @@ class GENEActivFile:
         light = []
         button = []
 
-        # is this the most efficient way of storing and returning the data?? compare to my script?
+        # is this the most efficient way of storing and returning the data?? compare to previous script?
         # also append vs extend?? why np.array ??
 
         start = 1
