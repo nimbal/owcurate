@@ -157,8 +157,7 @@ class GENEActivFile:
         self.samples = self.metadata["number_of_pages"] * 300
         self.remove_counter = 0
 
-        
-
+        # parse data from hexadecimal
         if parse_data:
             self.parse_data(calibrate = calibrate, correct_drift = correct_drift, quiet = quiet)
 
@@ -196,7 +195,7 @@ class GENEActivFile:
             """
             page_data = []
 
-
+            # get calibration variables
             if calibrate:
                 x_offset = self.calibration_info["x-offset"]
                 y_offset = self.calibration_info["y-offset"]
@@ -207,15 +206,16 @@ class GENEActivFile:
                 volts = self.calibration_info["volts"]
                 lux = self.calibration_info["lux"]
 
-            #x_offset, y_offset, z_offset = offsets
-            #x_gain, y_gain, z_gain = gains
 
+            # for each measurement in the page
             for i in range(300):
 
+                # parse measurement from line and convert from hex to bin
                 meas = page_hex[i * 12 : (i + 1) * 12]
                 meas = bin(int(meas, 16))[2:]
                 meas = meas.zfill(48)
-                
+
+                # parse each signal from measurement and convert to int
                 x = int(meas[0:12], 2)
                 y = int(meas[12:24], 2)
                 z = int(meas[24:36], 2)
@@ -223,7 +223,7 @@ class GENEActivFile:
                 button = int(meas[46], 2)
                 # res = int(curr[47], 2) - NOT USED
 
-                # run the twos component value on each composition which starts in binary form
+                # use twos complement to get signed integer for accelerometer data
                 x = twos_comp(x, 12)
                 y = twos_comp(y, 12)
                 z = twos_comp(z, 12)
