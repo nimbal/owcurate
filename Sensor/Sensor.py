@@ -23,6 +23,8 @@ class Sensor:
         self.button = None
         self.non_wear_starts = []
         self.non_wear_ends = []
+        self.sleep_starts = []
+        self.sleep_ends = []
 
     def init_accelerometer(self):
         self.accelerometer = Accelerometer()
@@ -89,7 +91,7 @@ class Sensor:
             angles.append(math.atan(z[i] / math.sqrt(math.pow(x[i], 2) + math.pow(y[i], 2))) * 180 / math.pi)
 
         # Differentiates angles with respect to next sample
-        angles_diff = np.diff(angles)
+        angles_diff = abs(np.diff(angles))
         angles_diff = np.append(angles_diff, 0)
 
         i = 0
@@ -108,8 +110,6 @@ class Sensor:
 
         self.start_indices = start_indices
         self.end_indices = end_indices
-
-
 
     def Check_Temperature(self, window_len=5):
         # Temperature based checking
@@ -158,9 +158,9 @@ class Sensor:
         i = 0
 
         while i < len(filtered) - 1:
-            if filtered[i] < 0.0005:
+            if filtered[i] < 0.001:
                 j = i
-                while filtered[j] < 0.0005 and j < len(filtered) - 1:
+                while filtered[j] < 0.001 and j < len(filtered) - 1:
                     j += 1
                 if j - i > 300:
                     starts.append(self.accelerometer.frequency * i)
@@ -181,6 +181,118 @@ class Sensor:
 
         self.start_indices = starts
         self.end_indices = ends
+
+    def Sleep_2015(self, window_len=5):
+
+        epoch_len = self.accelerometer.frequency * window_len
+        angles = []
+        angles_diff = []
+        angles_mean = []
+        rolling_median = []
+        start_indices = []
+        end_indices = []
+        x = []
+        y = []
+        z = []
+        curr_stat = False
+
+        # Step 1: 5 second rolling medians of raw signals x, y, and z
+        for i in range(0, len(self.accelerometer.x) - self.accelerometer.frequency, self.accelerometer.frequency):
+            x.append(statistics.median(self.accelerometer.x[i:i + self.accelerometer.frequency]))
+            y.append(statistics.median(self.accelerometer.y[i:i + self.accelerometer.frequency]))
+            z.append(statistics.median(self.accelerometer.z[i:i + self.accelerometer.frequency]))
+
+        # Step 2: Angle = tan^-1(z / (x^2 + y^2)) * 180 / pi
+        for i in range(len(x)):
+            angles.append(180 * math.atan(z[i] / math.sqrt(math.pow(x[i], 2) + math.pow(y[i], 2))) / math.pi)
+
+        # Step 3: Consecutive 5 second averages
+        for i in range(0, len(angles), 5):
+            angles_mean.append(statistics.mean(angles[i:i+5]))
+
+        # Step 4: Absolute difference between successive values
+        angles_diff = abs(np.diff(angles_mean))
+        angles_diff = np.append(angles_diff, 0)
+
+        # Step 5: Find periods where the absolute difference in angle is < 5 degrees
+        i = 0
+        while i < len(angles_diff) - 1:
+            if angles_diff[i] < 5:
+                j = i
+                while angles_diff[j] < 5 and j < len(angles_diff) - 1:
+                    j += 1
+
+                if j - i > 60:
+                    start_indices.append(i * epoch_len)
+                    end_indices.append(j * epoch_len)
+                i = j
+
+            i += 1
+
+        # Some method of collapsing gaps, not stated in the Van Hees 2015 paper
+
+    def Sleep_2018(self, window_len=5):
+
+        TIMES = self.generate_times(self.accelerometer.frequency, len(self.accelerometer.x))
+        epoch_len = self.accelerometer.frequency * window_len
+        angles = []
+        angles_diff = []
+        angles_mean = []
+        rolling_median = []
+        start_indices = []
+        end_indices = []
+        x = []
+        y = []
+        z = []
+        curr_stat = False
+
+        # Step 1: 5 second rolling medians of raw signals x, y, and z (Array Len // 75), Now in PER SECOND
+        for i in range(0, len(self.accelerometer.x) - self.accelerometer.frequency, self.accelerometer.frequency):
+            x.append(statistics.median(self.accelerometer.x[i:i + self.accelerometer.frequency]))
+            y.append(statistics.median(self.accelerometer.y[i:i + self.accelerometer.frequency]))
+            z.append(statistics.median(self.accelerometer.z[i:i + self.accelerometer.frequency]))
+
+        # Step 2: Angle = tan^-1(z / (x^2 + y^2)) * 180 / pi PER SECOND
+        for i in range(len(x)):
+            angles.append(180 * math.atan(z[i] / math.sqrt(math.pow(x[i], 2) + math.pow(y[i], 2))) / math.pi)
+
+        # Step 3: Consecutive 5 second averages PER 5 SECONDS
+        for i in range(0, len(angles), 5):
+            angles_mean.append(statistics.mean(angles[i:i + 5]))
+
+        # Step 4: Absolute difference between successive values
+        angles_diff = abs(np.diff(angles_mean))
+        angles_diff = np.append(angles_diff, 0)
+
+        # Step 5: Rolling median using 5 minute window
+        for i in range(0, len(angles_diff), 60):
+            rolling_median.append(statistics.median(angles_diff[i:i+60]))
+
+        days = [[self.metadata["start_time"].replace(hour=12, minute=0, second=0, microsecond=0) +
+                 datetime.timedelta(days=i)]
+                for i in range(int(len(self.accelerometer.x) / (75 * 60 * 60 * 24)) + 1)]
+
+        split_days = []
+        for i in range(len(days) - 1):
+            split_days.append(rolling_median[np.where(TIMES == days[i])[0][0] // (75 * 60 * 5):
+                                             np.where(TIMES == days[i + 1])[0][0] // (75 * 60 * 5)])
+
+        # Step 5: Find periods where the absolute difference in angle is < 5 degrees
+        i = 0
+        while i < len(angles_diff) - 1:
+            if angles_diff[i] < 5:
+                j = i
+                while angles_diff[j] < 5 and j < len(angles_diff) - 1:
+                    j += 1
+
+                if j - i > 60:
+                    start_indices.append(i * epoch_len)
+                    end_indices.append(j * epoch_len)
+                i = j
+
+            i += 1
+
+        # Some method of collapsing gaps, not stated in the Van Hees 2015 paper
 
 
 

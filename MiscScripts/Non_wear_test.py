@@ -27,6 +27,7 @@ RA = Sensor()
 subject_ID = input()
 trial_num = input()
 
+t0 = datetime.datetime.now()
 # ======================================== Getting input (Reading Files)
 print(" ======================================== READING FILES ========================================")
 EDFToSensor(LA, "/Users/nimbal/Documents/OND07/EDF/Accelerometer/OND07_WTL_%s_%s_GA_LAnkle_Accelerometer.EDF"
@@ -64,6 +65,9 @@ EDFToSensor(RW, "/Users/nimbal/Documents/OND07/EDF/Accelerometer/OND07_WTL_%s_%s
             % (subject_ID, trial_num),
             "/Users/nimbal/Documents/OND07/EDF/Button/OND07_WTL_%s_%s_GA_RWrist_Button.EDF"
             % (subject_ID, trial_num))
+t1 = datetime.datetime.now()
+
+print("Finished Reading Files Took {} Seconds".format((t1-t0).seconds))
 
 
 # ======================================== PROCESSING ========================================
@@ -73,29 +77,41 @@ LA_TIMES = LA.generate_times(LA.accelerometer.frequency, len(LA.accelerometer.x)
 RA_TIMES = RA.generate_times(RA.accelerometer.frequency, len(RA.accelerometer.x))
 LW_TIMES = LW.generate_times(LW.accelerometer.frequency, len(LW.accelerometer.x))
 RW_TIMES = RW.generate_times(RW.accelerometer.frequency, len(RW.accelerometer.x))
+t2 = datetime.datetime.now()
+print("Finished Generating Times, Took {} Seconds".format((t2 - t1).seconds))
 
 print(" ======================================== CALCULATING SVMS ======================================== ")
 LA.accelerometer.calculate_svms()
 LW.accelerometer.calculate_svms()
 RA.accelerometer.calculate_svms()
 RW.accelerometer.calculate_svms()
+t3 = datetime.datetime.now()
+print("Finished Calculating SVMs, Took {} Seconds".format((t3 - t2).seconds))
 
 # Checking for NonWear
 print(" ======================================== LEFT WRIST NONWEAR ========================================")
 LW.NonWear()
 LW.Check_Temperature()
+t4 = datetime.datetime.now()
+print("Finished Left Wrist Nonwear, Took {} Seconds".format((t4 - t3).seconds))
 
 print(" ======================================== RIGHT WRIST NONWEAR ========================================")
 RW.NonWear()
 RW.Check_Temperature()
+t5 = datetime.datetime.now()
+print("Finished Right Wrist Nonwear, Took {} Seconds".format((t5 - t4).seconds))
 
 print(" ======================================== LEFT ANKLE NONWEAR ========================================")
 LA.NonWear()
 LA.Check_Temperature()
+t6 = datetime.datetime.now()
+print("Finished Left Ankle Nonwear, Took {} Seconds".format((t6 - t5).seconds))
 
 print(" ======================================== RIGHT ANKLE NONWEAR ========================================")
 RA.NonWear()
 RA.Check_Temperature()
+t7 = datetime.datetime.now()
+print("Finished Right Ankle Nonwear, Took {} Seconds".format((t7 - t6).seconds))
 
 print(" ======================================== DONE ========================================")
 
@@ -140,7 +156,10 @@ ax4.set_title("Right Ankle")
 fig.autofmt_xdate()
 fig.tight_layout()
 
+t8 = datetime.datetime.now()
 
+print("Finished Plotting, Took {} Seconds".format((t8 - t7).seconds))
 
+print("Total Time: {} Seconds".format((t8 - t0).seconds))
 
 
