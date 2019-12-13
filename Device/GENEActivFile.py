@@ -65,14 +65,6 @@ class GENEActivFile:
             "temperature" : [],
             "light" : [],
             "button" : []}
-        
-        
-##        self.x = []
-##        self.y = []
-##        self.z = []
-##        self.temperature = []
-##        self.light = []
-##        self.button = []
 
         self.samples = 0
         self.remove_counter = 0
@@ -93,16 +85,6 @@ class GENEActivFile:
         Returns:
 
         '''
-
-
-        # Variable Declaration and Initialization
-        #self.file_name = self.file_path.split("/")[-1],
-        #self.working_directory = self.file_path.split("/")[:-1]
-
-        #lines = None
-        #header_packet = None
-        #data_packet = None
-        #bin_file = None
 
         # Read GENEActiv .bin file
         if not quiet: print("Reading %s ..." % self.file_path)
@@ -190,66 +172,6 @@ class GENEActivFile:
                 val = val - (1 << bits)  # compute negative value
             return val
 
-##        def parse_page(page_hex):
-##
-##            """ This method processes the current page of data as defined by GENEActiv
-##
-##            Args:
-##                page_hex: str
-##                    String of Hexadecimal data to be parsed as per their descriptors
-##
-##            Returns:
-##                list of tuples : Each tuple will contain (x, y, z) samples for that time
-##
-##            """
-##            page_data = []
-##
-##            # get calibration variables
-##            if calibrate:
-##                x_offset = self.calibration_info["x-offset"]
-##                y_offset = self.calibration_info["y-offset"]
-##                z_offset = self.calibration_info["z-offset"]
-##                x_gain = self.calibration_info["x-gain"]
-##                y_gain = self.calibration_info["y-gain"]
-##                z_gain = self.calibration_info["z-gain"]
-##                volts = self.calibration_info["volts"]
-##                lux = self.calibration_info["lux"]
-##
-##
-##            # for each measurement in the page
-##            for i in range(300):
-##
-##                # parse measurement from line and convert from hex to bin
-##                meas = page_hex[i * 12 : (i + 1) * 12]
-##                meas = bin(int(meas, 16))[2:]
-##                meas = meas.zfill(48)
-##
-##                # parse each signal from measurement and convert to int
-##                x = int(meas[0:12], 2)
-##                y = int(meas[12:24], 2)
-##                z = int(meas[24:36], 2)
-##                light = int(meas[36:46], 2)
-##                button = int(meas[46], 2)
-##                # res = int(curr[47], 2) - NOT USED
-##
-##                # use twos complement to get signed integer for accelerometer data
-##                x = twos_comp(x, 12)
-##                y = twos_comp(y, 12)
-##                z = twos_comp(z, 12)
-##                #light = twos_comp(light, 10) # NOT NEEDED, not a signed integer? TEST TO SEE IF THIS FIXES HIGH VALUES??
-##
-##
-##                # calibrate data
-##                if calibrate:
-##                    x = (x * 100 - x_offset) / x_gain
-##                    y = (y * 100 - y_offset) / y_gain
-##                    z = (z * 100 - z_offset) / z_gain
-##                    light = (light * lux) / volts
-##
-##                
-##                page_data.append((x, y, z, light, button))
-##
-##            return page_data
 
         if not quiet: print("Parsing data from hexadecimal ...")
 
@@ -264,7 +186,7 @@ class GENEActivFile:
             volts = self.calibration_info["volts"]
             lux = self.calibration_info["lux"]
         
-        # Appending relevant information from parsed hexadecimal data
+        # initialize lists to temporarily hold read data
         temp = []
         x = []
         y = []
@@ -276,14 +198,18 @@ class GENEActivFile:
         end = self.file_metadata["number_of_pages"]
 
         # loop through pages
-        for i in range(end): #******************************
+        for i in range(end):
+
+            # display progress
             if (i // 1000) * 1000 == i:
                 if not quiet:
                     print("Current Progress: %f %%" % (100 * i / end))
 
+            # get temp from page header
             temp.append(float(self.data_packet[(i * 10) + 5].split(":")[-1]))
-            page_hex = self.data_packet[(i * 10) + 9]
 
+            # get page data hex line
+            page_hex = self.data_packet[(i * 10) + 9]
 
             # loop through measurements in page
             for j in range(300):
@@ -307,30 +233,24 @@ class GENEActivFile:
                 meas_z = twos_comp(meas_z, 12)
                 #light = twos_comp(light, 10) # NOT NEEDED, not a signed integer? TEST TO SEE IF THIS FIXES HIGH VALUES??
 
-
-                # calibrate data
+                # calibrate data if requrested
                 if calibrate:
                     meas_x = (meas_x * 100 - x_offset) / x_gain
                     meas_y = (meas_y * 100 - y_offset) / y_gain
                     meas_z = (meas_z * 100 - z_offset) / z_gain
                     meas_light = (meas_light * lux) / volts
 
+                # append measurement to data list
                 x.append(meas_x)
                 y.append(meas_y)
                 z.append(meas_z)
                 light.append(meas_light)
                 button.append(meas_button)
                 
-##            page_data = parse_page(self.data_packet[(i * 10) + 9])
-##            temp.append(float(self.data_packet[(i * 10) + 5].split(":")[-1]))
-##            x.extend([page_data[j][0] for j in range(300)])
-##            y.extend([page_data[j][1] for j in range(300)])
-##            z.extend([page_data[j][2] for j in range(300)])
-##            light.extend([page_data[j][3] for j in range(300)])
-##            button.extend([page_data[j][4] for j in range(300)])
-##
+
         if not quiet: print("Storing parsed data ...")
 
+        # convert data to numpy arrays and store in data dictionary attribute
         self.data["x"] = np.array(x)
         self.data["y"] = np.array(y)
         self.data["z"] = np.array(z)
@@ -338,6 +258,7 @@ class GENEActivFile:
         self.data["button"] = np.array(button)
         self.data["temperature"] = np.array(temp)
 
+        # correct clock drift if requested
         if correct_drift: self.correct_drift(quiet = quiet)
 
 
