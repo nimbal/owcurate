@@ -18,8 +18,10 @@ class GENEActivFile:
 
         self.file_path = file_path
         self.header = {}
+        self.data_packet = None
+        #self.error_corrected = False # NOT SURE WHAT THIS IS FOR
 
-        self.metadata = {
+        self.file_metadata = {
             "serial_num": "",
             "device_type": "",
             "temperature_units": "",
@@ -44,8 +46,8 @@ class GENEActivFile:
             "weight": "",
             "handedness_code": "",
             "subject_notes": "",
-            "number_of_pages": ""
-        }
+            "number_of_pages": ""}
+        
         self.calibration_info = {
             "x-gain": 0,
             "x-offset": 0,
@@ -54,21 +56,28 @@ class GENEActivFile:
             "z-gain": 0,
             "z-offset": 0,
             "volts": 0,
-            "lux": 0
-        }
+            "lux": 0}
 
+        self.data = {
+            "x" : [],
+            "y" : [],
+            "z" : [],
+            "temperature" : [],
+            "light" : [],
+            "button" : []}
+        
+        
+##        self.x = []
+##        self.y = []
+##        self.z = []
+##        self.temperature = []
+##        self.light = []
+##        self.button = []
 
-        #self.error_corrected = False # NOT SURE WHAT THIS IS FOR
-        self.drift_corrected = False
-        self.data_packet = None
-        self.x = None
-        self.y = None
-        self.z = None
-        self.temperature = None
-        self.light = None
-        self.button = None
         self.samples = 0
         self.remove_counter = 0
+
+        self.drift_corrected = False
 
     def read(self, parse_data = True, calibrate = True, correct_drift = False, quiet = False):
 
@@ -115,7 +124,7 @@ class GENEActivFile:
                 pass
 
         # Extract and format relevant metadata from header
-        self.metadata.update({
+        self.file_metadata.update({
             "serial_num": self.header["Device Unique Serial Code"],
             "device_type": self.header["Device Type"],
             "temperature_units": self.header["Temperature Sensor Units"],
@@ -154,7 +163,7 @@ class GENEActivFile:
             "lux": int(self.header["Lux"])
         })
 
-        self.samples = self.metadata["number_of_pages"] * 300
+        self.samples = self.file_metadata["number_of_pages"] * 300
         self.remove_counter = 0
 
         # parse data from hexadecimal
@@ -181,69 +190,80 @@ class GENEActivFile:
                 val = val - (1 << bits)  # compute negative value
             return val
 
-        def parse_page(page_hex):
+##        def parse_page(page_hex):
+##
+##            """ This method processes the current page of data as defined by GENEActiv
+##
+##            Args:
+##                page_hex: str
+##                    String of Hexadecimal data to be parsed as per their descriptors
+##
+##            Returns:
+##                list of tuples : Each tuple will contain (x, y, z) samples for that time
+##
+##            """
+##            page_data = []
+##
+##            # get calibration variables
+##            if calibrate:
+##                x_offset = self.calibration_info["x-offset"]
+##                y_offset = self.calibration_info["y-offset"]
+##                z_offset = self.calibration_info["z-offset"]
+##                x_gain = self.calibration_info["x-gain"]
+##                y_gain = self.calibration_info["y-gain"]
+##                z_gain = self.calibration_info["z-gain"]
+##                volts = self.calibration_info["volts"]
+##                lux = self.calibration_info["lux"]
+##
+##
+##            # for each measurement in the page
+##            for i in range(300):
+##
+##                # parse measurement from line and convert from hex to bin
+##                meas = page_hex[i * 12 : (i + 1) * 12]
+##                meas = bin(int(meas, 16))[2:]
+##                meas = meas.zfill(48)
+##
+##                # parse each signal from measurement and convert to int
+##                x = int(meas[0:12], 2)
+##                y = int(meas[12:24], 2)
+##                z = int(meas[24:36], 2)
+##                light = int(meas[36:46], 2)
+##                button = int(meas[46], 2)
+##                # res = int(curr[47], 2) - NOT USED
+##
+##                # use twos complement to get signed integer for accelerometer data
+##                x = twos_comp(x, 12)
+##                y = twos_comp(y, 12)
+##                z = twos_comp(z, 12)
+##                #light = twos_comp(light, 10) # NOT NEEDED, not a signed integer? TEST TO SEE IF THIS FIXES HIGH VALUES??
+##
+##
+##                # calibrate data
+##                if calibrate:
+##                    x = (x * 100 - x_offset) / x_gain
+##                    y = (y * 100 - y_offset) / y_gain
+##                    z = (z * 100 - z_offset) / z_gain
+##                    light = (light * lux) / volts
+##
+##                
+##                page_data.append((x, y, z, light, button))
+##
+##            return page_data
 
-            """ This method processes the current page of data as defined by GENEActiv
-
-            Args:
-                page_hex: str
-                    String of Hexadecimal data to be parsed as per their descriptors
-
-            Returns:
-                list of tuples : Each tuple will contain (x, y, z) samples for that time
-
-            """
-            page_data = []
-
-            # get calibration variables
-            if calibrate:
-                x_offset = self.calibration_info["x-offset"]
-                y_offset = self.calibration_info["y-offset"]
-                z_offset = self.calibration_info["z-offset"]
-                x_gain = self.calibration_info["x-gain"]
-                y_gain = self.calibration_info["y-gain"]
-                z_gain = self.calibration_info["z-gain"]
-                volts = self.calibration_info["volts"]
-                lux = self.calibration_info["lux"]
-
-
-            # for each measurement in the page
-            for i in range(300):
-
-                # parse measurement from line and convert from hex to bin
-                meas = page_hex[i * 12 : (i + 1) * 12]
-                meas = bin(int(meas, 16))[2:]
-                meas = meas.zfill(48)
-
-                # parse each signal from measurement and convert to int
-                x = int(meas[0:12], 2)
-                y = int(meas[12:24], 2)
-                z = int(meas[24:36], 2)
-                light = int(meas[36:46], 2)
-                button = int(meas[46], 2)
-                # res = int(curr[47], 2) - NOT USED
-
-                # use twos complement to get signed integer for accelerometer data
-                x = twos_comp(x, 12)
-                y = twos_comp(y, 12)
-                z = twos_comp(z, 12)
-                #light = twos_comp(light, 10) # NOT NEEDED, not a signed integer? TEST TO SEE IF THIS FIXES HIGH VALUES??
-
-
-                # calibrate data
-                if calibrate:
-                    x = (x * 100 - x_offset) / x_gain
-                    y = (y * 100 - y_offset) / y_gain
-                    z = (z * 100 - z_offset) / z_gain
-                    light = (light * lux) / volts
-
-                page_data.append((x, y, z, light, button))
-
-            return page_data
-
-        
         if not quiet: print("Parsing data from hexadecimal ...")
 
+        # get calibration variables
+        if calibrate:
+            x_offset = self.calibration_info["x-offset"]
+            y_offset = self.calibration_info["y-offset"]
+            z_offset = self.calibration_info["z-offset"]
+            x_gain = self.calibration_info["x-gain"]
+            y_gain = self.calibration_info["y-gain"]
+            z_gain = self.calibration_info["z-gain"]
+            volts = self.calibration_info["volts"]
+            lux = self.calibration_info["lux"]
+        
         # Appending relevant information from parsed hexadecimal data
         temp = []
         x = []
@@ -252,33 +272,71 @@ class GENEActivFile:
         light = []
         button = []
 
-        # is this the most efficient way of storing and returning the data?? compare to previous script?
-        # also append vs extend?? why np.array ??
-
         start = 1
-        end = self.metadata["number_of_pages"]
+        end = self.file_metadata["number_of_pages"]
 
-
+        # loop through pages
         for i in range(end): #******************************
             if (i // 1000) * 1000 == i:
                 if not quiet:
                     print("Current Progress: %f %%" % (100 * i / end))
-            page_data = parse_page(self.data_packet[(i * 10) + 9])
-            temp.append(float(self.data_packet[(i * 10) + 5].split(":")[-1]))
-            x.extend([page_data[j][0] for j in range(300)])
-            y.extend([page_data[j][1] for j in range(300)])
-            z.extend([page_data[j][2] for j in range(300)])
-            light.extend([page_data[j][3] for j in range(300)])
-            button.extend([page_data[j][4] for j in range(300)])
 
+            temp.append(float(self.data_packet[(i * 10) + 5].split(":")[-1]))
+            page_hex = self.data_packet[(i * 10) + 9]
+
+
+            # loop through measurements in page
+            for j in range(300):
+
+                # parse measurement from line and convert from hex to bin
+                meas = page_hex[j * 12 : (j + 1) * 12]
+                meas = bin(int(meas, 16))[2:]
+                meas = meas.zfill(48)
+
+                # parse each signal from measurement and convert to int
+                meas_x = int(meas[0:12], 2)
+                meas_y = int(meas[12:24], 2)
+                meas_z = int(meas[24:36], 2)
+                meas_light = int(meas[36:46], 2)
+                meas_button = int(meas[46], 2)
+                # res = int(curr[47], 2) - NOT USED
+
+                # use twos complement to get signed integer for accelerometer data
+                meas_x = twos_comp(meas_x, 12)
+                meas_y = twos_comp(meas_y, 12)
+                meas_z = twos_comp(meas_z, 12)
+                #light = twos_comp(light, 10) # NOT NEEDED, not a signed integer? TEST TO SEE IF THIS FIXES HIGH VALUES??
+
+
+                # calibrate data
+                if calibrate:
+                    meas_x = (meas_x * 100 - x_offset) / x_gain
+                    meas_y = (meas_y * 100 - y_offset) / y_gain
+                    meas_z = (meas_z * 100 - z_offset) / z_gain
+                    meas_light = (meas_light * lux) / volts
+
+                x.append(meas_x)
+                y.append(meas_y)
+                z.append(meas_z)
+                light.append(meas_light)
+                button.append(meas_button)
+                
+##            page_data = parse_page(self.data_packet[(i * 10) + 9])
+##            temp.append(float(self.data_packet[(i * 10) + 5].split(":")[-1]))
+##            x.extend([page_data[j][0] for j in range(300)])
+##            y.extend([page_data[j][1] for j in range(300)])
+##            z.extend([page_data[j][2] for j in range(300)])
+##            light.extend([page_data[j][3] for j in range(300)])
+##            button.extend([page_data[j][4] for j in range(300)])
+##
         if not quiet: print("Storing parsed data ...")
 
-        self.x = np.array(x)
-        self.y = np.array(y)
-        self.z = np.array(z)
-        self.light = np.array(light)
-        self.button = np.array(button)
-        self.temperature = np.array(temp)
+        self.data["x"] = np.array(x)
+        self.data["y"] = np.array(y)
+        self.data["z"] = np.array(z)
+        self.data["light"] = np.array(light)
+        self.data["button"] = np.array(button)
+        self.data["temperature"] = np.array(temp)
 
         if correct_drift: self.correct_drift(quiet = quiet)
 
@@ -297,7 +355,7 @@ class GENEActivFile:
 
         '''
         if (self.drift_corrected and force) or (not self.drift_corrected):
-            self.remove_counter = abs(self.samples / (self.metadata["time_shift"] * self.metadata["measurement_frequency"]))
+            self.remove_counter = abs(self.samples / (self.file_metadata["time_shift"] * self.file_metadata["measurement_frequency"]))
 
             if not quiet: print("Correcting clock drift ...")
 
