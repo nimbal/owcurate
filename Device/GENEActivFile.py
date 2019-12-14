@@ -21,7 +21,8 @@ class GENEActivFile:
         self.data_packet = None
         #self.error_corrected = False # NOT SURE WHAT THIS IS FOR
 
-        self.file_metadata = {
+        # metadata stored in file header or related to entire file
+        self.file_metadata = {          
             "serial_num": "",
             "device_type": "",
             "temperature_units": "",
@@ -47,8 +48,9 @@ class GENEActivFile:
             "handedness_code": "",
             "subject_notes": "",
             "number_of_pages": ""}
-        
-        self.calibration_info = {
+
+        # metadata about signal (from or calculated from file header)
+        self.signal_metadata = {
             "x-gain": 0,
             "x-offset": 0,
             "y-gain" : 0,
@@ -57,7 +59,10 @@ class GENEActivFile:
             "z-offset": 0,
             "volts": 0,
             "lux": 0}
+            # ADD RANGE calculations
+            # ADD SAMPLE RATES (TEMP DIFFERENT)
 
+        # data read from file (may be partial pages and/or downsampled - see file_metadata)
         self.data = {
             "x" : [],
             "y" : [],
@@ -65,6 +70,9 @@ class GENEActivFile:
             "temperature" : [],
             "light" : [],
             "button" : []}
+
+        # metadata related to or calculated from data read (considers downsampling and partial pages)
+        self.data_metadata = {}
 
         self.samples = 0
         self.remove_counter = 0
@@ -134,7 +142,7 @@ class GENEActivFile:
             "subject_notes": self.header["Subject Notes"],
             "number_of_pages": int(self.header["Number of Pages"])
         })
-        self.calibration_info.update({
+        self.signal_metadata.update({
             "x-gain": int(self.header["x gain"]),
             "x-offset": int(self.header["x offset"]),
             "y-gain": int(self.header["y gain"]),
@@ -177,14 +185,14 @@ class GENEActivFile:
 
         # get calibration variables
         if calibrate:
-            x_offset = self.calibration_info["x-offset"]
-            y_offset = self.calibration_info["y-offset"]
-            z_offset = self.calibration_info["z-offset"]
-            x_gain = self.calibration_info["x-gain"]
-            y_gain = self.calibration_info["y-gain"]
-            z_gain = self.calibration_info["z-gain"]
-            volts = self.calibration_info["volts"]
-            lux = self.calibration_info["lux"]
+            x_offset = self.signal_metadata["x-offset"]
+            y_offset = self.signal_metadata["y-offset"]
+            z_offset = self.signal_metadata["z-offset"]
+            x_gain = self.signal_metadata["x-gain"]
+            y_gain = self.signal_metadata["y-gain"]
+            z_gain = self.signal_metadata["z-gain"]
+            volts = self.signal_metadata["volts"]
+            lux = self.signal_metadata["lux"]
         
         # initialize lists to temporarily hold read data
         temp = []
@@ -195,7 +203,7 @@ class GENEActivFile:
         button = []
 
         start = 1
-        end = self.file_metadata["number_of_pages"]
+        end = 1000#self.file_metadata["number_of_pages"]
 
         # loop through pages
         for i in range(end):
@@ -276,6 +284,8 @@ class GENEActivFile:
 
         '''
         if (self.drift_corrected and force) or (not self.drift_corrected):
+
+
             self.remove_counter = abs(self.samples / (self.file_metadata["time_shift"] * self.file_metadata["measurement_frequency"]))
 
             if not quiet: print("Correcting clock drift ...")
