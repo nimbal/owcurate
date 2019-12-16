@@ -22,11 +22,12 @@ class GENEActivFile:
         #self.error_corrected = False # NOT SURE WHAT THIS IS FOR
 
         # metadata stored in file header or related to entire file
-        self.file_metadata = {          
+        self.file_info = {          
             "serial_num": "",
             "device_type": "",
             "temperature_units": "",
             "measurement_frequency": "",
+            "temp_frequency" : "",
             "measurement_period": "",
             "start_time": "",
             "study_centre": "",
@@ -47,10 +48,10 @@ class GENEActivFile:
             "weight": "",
             "handedness_code": "",
             "subject_notes": "",
-            "number_of_pages": ""}
-
-        # metadata about signal (from or calculated from file header)
-        self.signal_metadata = {
+            "number_of_pages": "",              # from header
+            "pagecount" : None,                # count from datapacket
+            "pagecount_match" : None,
+            "samples" : None,
             "x-gain": 0,
             "x-offset": 0,
             "y-gain" : 0,
@@ -69,17 +70,17 @@ class GENEActivFile:
             "z" : [],
             "temperature" : [],
             "light" : [],
-            "button" : []}
+            "button" : [],
+            "start_time": None,
+            "sample_rate" : None,
+            "temp_sample_rate" : None}
 
-        # metadata related to or calculated from data read (considers downsampling and partial pages)
-        self.data_metadata = {}
-
-        self.samples = 0
         self.remove_counter = 0
 
         self.drift_corrected = False
 
-    def read(self, parse_data = True, calibrate = True, correct_drift = False, quiet = False):
+    def read(self, parse_data = True, start = 1, end = -1, downsample = 1,
+             calibrate = True, correct_drift = False, update = True, quiet = False):
 
         '''
         read_from_raw reads a raw GENEActiv .bin file
@@ -114,11 +115,12 @@ class GENEActivFile:
                 pass
 
         # Extract and format relevant metadata from header
-        self.file_metadata.update({
+        self.file_info.update({
             "serial_num": self.header["Device Unique Serial Code"],
             "device_type": self.header["Device Type"],
             "temperature_units": self.header["Temperature Sensor Units"],
             "measurement_frequency": int(self.header["Measurement Frequency"].split(" ")[0]),
+            "temp_frequency" : int(self.header["Measurement Frequency"].split(" ")[0]) / 300,
             "measurement_period": int(self.header["Measurement Period"].split(" ")[0]), #???????
             "start_time": datetime.datetime.strptime(self.data_packet[3][10:], "%Y-%m-%d %H:%M:%S:%f"),
             "study_centre": self.header["Study Centre"],
@@ -140,9 +142,7 @@ class GENEActivFile:
             "weight": self.header['Weight'],
             "handedness_code": self.header["Handedness Code"],
             "subject_notes": self.header["Subject Notes"],
-            "number_of_pages": int(self.header["Number of Pages"])
-        })
-        self.signal_metadata.update({
+            "number_of_pages": int(self.header["Number of Pages"]),
             "x-gain": int(self.header["x gain"]),
             "x-offset": int(self.header["x offset"]),
             "y-gain": int(self.header["y gain"]),
@@ -153,17 +153,49 @@ class GENEActivFile:
             "lux": int(self.header["Lux"])
         })
 
-        self.samples = self.file_metadata["number_of_pages"] * 300
-        self.remove_counter = 0
+        # get pagecount from data_packet
+
+        # set match to true
+        self.file_info["pagecount_match"] = True
+
+        # get page counts
+        pagecount = len(self.data_packet) / 10
+        header_pagecount = self.file_info['number_of_pages']
+
+        # check if pages read is an integer (lines read is multiple of 10)
+        if not pagecount.is_integer():
+
+            # set match to false and display warning
+            self.file_info["pagecount_match"] = False
+            print(f"****** WARNING: Pages read ({pagecount}) is not",
+                  f"an integer, data may be corrupt.\n")
+
+        # check if pages read matches header count
+        if pagecount != header_pagecount:
+
+            # set match to false and display warning
+            self.file_info["pagecount_match"] = False
+            print(f"****** WARNING: Pages read ({pagecount}) not equal to",
+                  f"'Number of Pages' in header ({header_pagecount}).\n")
+
+        # store pagecount as attribute
+        self.file_info["pagecount"] = pagecount
+
+        # cacluate number of samples
+        self.file_info["samples"] = self.file_info["pagecount"] * 300
+
+        #self.remove_counter = 0
 
         # parse data from hexadecimal
         if parse_data:
-            self.parse_data(calibrate = calibrate, correct_drift = correct_drift, quiet = quiet)
+            self.parse_data(start = start, end = end, downsample = downsample, calibrate = calibrate,
+                            correct_drift = correct_drift, update = update, quiet = quiet)
 
         if not quiet: print("Done reading file.")
     
 
-    def parse_data(self, calibrate = True, correct_drift = False, quiet = False):
+    def parse_data(self, start = 1, end = -1, downsample = 1, calibrate = True,
+                   correct_drift = False, update = True, quiet = False):
 
         def twos_comp(val, bits):
             """ This method calculates the twos complement value of the current bit
@@ -180,19 +212,44 @@ class GENEActivFile:
                 val = val - (1 << bits)  # compute negative value
             return val
 
+        pagecount = self.file_info["pagecount"]
+
+        # check whether data has been read
+        if (not self.header or self.data_packet is None
+            or pagecount is None):
+
+            print('****** WARNING: Cannot parse data because file has not',
+                  'been read.\n')
+            return
 
         if not quiet: print("Parsing data from hexadecimal ...")
 
+        # store passed arguments before checking and modifying
+        old_start = start
+        old_end = end
+        old_downsample = downsample
+
+        # check start and end for acceptable values
+        if start < 1: start = 1
+        elif start > pagecount: start = round(pagecount)
+
+        if end == -1 or end > pagecount: end = round(pagecount)
+        elif end < start: end = start
+
+        #check downsample for valid values
+        if downsample < 1: downsample = 1
+        elif downsample > 6: downsample = 6
+
         # get calibration variables
         if calibrate:
-            x_offset = self.signal_metadata["x-offset"]
-            y_offset = self.signal_metadata["y-offset"]
-            z_offset = self.signal_metadata["z-offset"]
-            x_gain = self.signal_metadata["x-gain"]
-            y_gain = self.signal_metadata["y-gain"]
-            z_gain = self.signal_metadata["z-gain"]
-            volts = self.signal_metadata["volts"]
-            lux = self.signal_metadata["lux"]
+            x_offset = self.file_info["x-offset"]
+            y_offset = self.file_info["y-offset"]
+            z_offset = self.file_info["z-offset"]
+            x_gain = self.file_info["x-gain"]
+            y_gain = self.file_info["y-gain"]
+            z_gain = self.file_info["z-gain"]
+            volts = self.file_info["volts"]
+            lux = self.file_info["lux"]
         
         # initialize lists to temporarily hold read data
         temp = []
@@ -202,28 +259,42 @@ class GENEActivFile:
         light = []
         button = []
 
-        start = 1
-        end = 1000#self.file_metadata["number_of_pages"]
+        total_pages = end - (start - 1)
+        sample_rate = self.file_info['measurement_frequency']
+        downsampled_rate = (sample_rate / downsample)
+        meas_per_page = int(300 / downsample)
 
+        # get start_time (time of first data point in view)
+        start_time_line = self.data_packet[(start - 1) * 10 + 3]
+        colon = start_time_line.index(':')
+        start_time = start_time_line[colon + 1:]
+        start_time = datetime.datetime.strptime(start_time, '%Y-%m-%d %H:%M:%S:%f')
+
+        # grab chunk of data from packet
+        data_chunk = [self.data_packet[i]
+                    for i in range((start - 1) * 10 + 9, end * 10, 10)]
+
+
+        i = 0
+        
         # loop through pages
-        for i in range(end):
+        for data_line in data_chunk:
+
+            i = i + 1
 
             # display progress
             if (i // 1000) * 1000 == i:
                 if not quiet:
-                    print("Current Progress: %f %%" % (100 * i / end))
+                    print("Current Progress: %f %%" % (100 * i / total_pages))
 
             # get temp from page header
-            temp.append(float(self.data_packet[(i * 10) + 5].split(":")[-1]))
-
-            # get page data hex line
-            page_hex = self.data_packet[(i * 10) + 9]
+            #temp.append(float(self.data_packet[(i * 10) + 5].split(":")[-1]))
 
             # loop through measurements in page
-            for j in range(300):
+            for j in range(0, 300, downsample):
 
                 # parse measurement from line and convert from hex to bin
-                meas = page_hex[j * 12 : (j + 1) * 12]
+                meas = data_line[j * 12 : (j + 1) * 12]
                 meas = bin(int(meas, 16))[2:]
                 meas = meas.zfill(48)
 
@@ -254,20 +325,50 @@ class GENEActivFile:
                 z.append(meas_z)
                 light.append(meas_light)
                 button.append(meas_button)
-                
+
+
+        # get all temp lines from data packet (1 per page)
+        temp_chunk = [self.data_packet[i]
+                      for i in range((start - 1) * 10 + 5, end * 10, 10)]
+
+        # parse temp from temp lines and insert into dict
+        for temp_line in temp_chunk:
+            colon = temp_line.index(':')
+            temp.append(float(temp_line[colon + 1:]))
 
         if not quiet: print("Storing parsed data ...")
 
-        # convert data to numpy arrays and store in data dictionary attribute
-        self.data["x"] = np.array(x)
-        self.data["y"] = np.array(y)
-        self.data["z"] = np.array(z)
-        self.data["light"] = np.array(light)
-        self.data["button"] = np.array(button)
-        self.data["temperature"] = np.array(temp)
+        data= {"x" : np.array(x),
+               "y" : np.array(y),
+               "z" : np.array(z),
+               "light" : np.array(light),
+               "button" : np.array(button),
+               "temperature" : np.array(temp),
+               "start_time" : start_time,
+               "sample_rate" : downsampled_rate,
+               "temp_sample_rate" : self.file_info["temp_frequency"]}
+
+        # update data attribute if requested
+        if update: self.data = data
+
+        # display message if start and end values were changed
+        if old_start != start or old_end != end:
+            print('****** WARNING: Start or end values were modified to fit',
+                  'acceptable range.\n',
+                  f'       Old range: {old_start} to {old_end}\n',
+                  f'       New range: {start} to {end}\n')
+
+        # display message downsample ratio was changed
+        if old_downsample != downsample:
+            print('****** WARNING: Downsample value was modified to fit',
+                  'acceptable range.\n',
+                  f'       Old value: {old_downsample}\n',
+                  f'       New value: {downsample}\n')
+
+        return data
 
         # correct clock drift if requested
-        if correct_drift: self.correct_drift(quiet = quiet)
+        # if correct_drift: self.correct_drift(quiet = quiet)
 
 
     def correct_drift(self, force = False, quiet = False):
