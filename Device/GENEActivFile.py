@@ -18,32 +18,34 @@ import matplotlib.dates as mdates
 
 # ======================================== GENEActivFile CLASS ========================================
 class GENEActivFile:
+
     def __init__(self, file_path):
 
         self.file_path = file_path
         self.header = {}
         self.data_packet = None
-        #self.error_corrected = False # NOT SURE WHAT THIS IS FOR
 
         # metadata stored in file header or related to entire file
         self.file_info = {          
-            "serial_num": None,
-            "device_type": None,
-            "temperature_units": None,
-            "measurement_frequency": None,
+            "serial_num" : None,
+            "device_type" : None,
+            "temperature_units" : None,
+            "measurement_frequency" : None,
             "temp_frequency" : None,
-            "measurement_period": None,
-            "start_time": None,
-            "study_centre": None,
-            "study_code": None,
-            "investigator_id": None,
-            "exercise_type": None,
-            "config_id": None,
-            "config_time": None,
-            "config_notes": None,
-            "extract_id": None,
-            "extract_time": None,
-            "extract_notes": None,
+            "measurement_period" : None,
+            "start_time" : None,
+            "study_centre" : None,
+            "study_code" : None,
+            "investigator_id" : None,
+            "exercise_type" : None,
+            "config_id" : None,
+            "config_time" : None,
+            "config_notes" : None,
+            "extract_id" : None,
+            "extract_time" : None,
+            "extract_notes" : None,
+            "clock_drift" : None,
+            "clock_drift_rate" : None,
             "device_location": None,
             "subject_id": None,
             "date_of_birth": None,
@@ -85,9 +87,6 @@ class GENEActivFile:
             "sample_rate" : None,
             "temp_sample_rate" : None}
 
-        self.remove_counter = 0
-
-        self.drift_corrected = False
 
     def read(self, parse_data = True, start = 1, end = -1, downsample = 1,
              calibrate = True, correct_drift = False, update = True, quiet = False):
@@ -149,7 +148,7 @@ class GENEActivFile:
             "extract_id" : self.header["Extract Operator ID"],
             "extract_time" : datetime.datetime.strptime(self.header["Extract Time"], "%Y-%m-%d %H:%M:%S:%f"),
             "extract_notes" : self.header["Extract Notes"],
-            "time_shift" : float(self.header["Extract Notes"].split(" ")[3][:-2].replace(",", "")),
+            "clock_drift" : float(self.header["Extract Notes"].split(" ")[3][:-2].replace(",", "")),
             "device_location" : self.header["Device Location Code"],
             "subject_id" : self.header["Subject Code"],
             "date_of_birth" : self.header["Date of Birth"],
@@ -207,7 +206,9 @@ class GENEActivFile:
         # cacluate number of samples
         self.file_info["samples"] = self.file_info["pagecount"] * 300
 
-        #self.remove_counter = 0
+        #calculate clock drift rate
+        total_seconds = (self.file_info["extract_time"] - self.file_info["config_time"]).total_seconds()
+        self.file_info["clock_drift_rate"] = self.file_info["clock_drift"] / total_seconds
 
         # parse data from hexadecimal
         if parse_data:
@@ -358,17 +359,63 @@ class GENEActivFile:
             colon = temp_line.index(':')
             temp.append(float(temp_line[colon + 1:]))
 
+
         if not quiet: print("Storing parsed data ...")
 
-        data= {"x" : np.array(x),
-               "y" : np.array(y),
-               "z" : np.array(z),
-               "light" : np.array(light),
-               "button" : np.array(button),
-               "temperature" : np.array(temp),
-               "start_time" : start_time,
-               "sample_rate" : downsampled_rate,
-               "temp_sample_rate" : self.file_info["temp_frequency"]}
+        data = {"x" : np.array(x),
+                "y" : np.array(y),
+                "z" : np.array(z),
+                "light" : np.array(light),
+                "button" : np.array(button),
+                "temperature" : np.array(temp),
+                "start_time" : start_time,
+                "sample_rate" : downsampled_rate,
+                "temp_sample_rate" : self.file_info["temp_frequency"]}
+
+         # correct clock drift
+        if correct_drift:
+
+            if not quiet: print("Correcting clock drift ...")
+
+            adjust_rate = abs(1 / self.file_info["clock_drift_rate"])
+            time_to_start = (data["start_time"] - self.file_info["config_time"]).total_seconds()
+            adjust_start = int(time_to_start * data["sample_rate"] * abs(self.file_info["clock_drift_rate"]))
+            adjust_start_temp = int(time_to_start * data["temp_sample_rate"] * abs(self.file_info["clock_drift_rate"]))
+          
+            if self.file_info["clock_drift_rate"] > 0: #if drift is positive then remove extra samples
+
+                
+                for key in ["x", "y", "z", "light", "button", "temperature"]:
+
+                    # delete data from each signal
+                    data[key] = np.delete(data[key],
+                                          [round(adjust_rate * (i + 1)) for i in
+                                           range(int(len(data[key]) / adjust_rate))])
+
+
+                    # delete data from start of each signal to account for time from config to start
+                    if key is "temperature":
+                        data[key] = np.delete(data[key], range(adjust_start_temp))
+                    else:
+                        data[key] = np.delete(data[key], range(adjust_start))
+                
+
+            else: #else add samples
+
+                for key in ["x", "y", "z", "light", "button", "temperature"]:
+
+                    # insert data into each signal
+                    data[key] = np.insert(data[key],
+                                          [round(adjust_rate * (i + 1)) for i in
+                                           range(int(len(data[key]) / adjust_rate))], 0)
+
+
+                    # insert data into start of each signal to account for time from config to start
+                    if key is "temperature":
+                        data[key] = np.insert(data[key], 0, [0] * adjust_start_temp)
+                    else:
+                        data[key] = np.insert(data[key], 0, [0] * adjust_start)
+
 
         # update data attribute if requested
         if update: self.data = data
@@ -388,81 +435,6 @@ class GENEActivFile:
                   f'       New value: {downsample}\n')
 
         return data
-
-        # correct clock drift if requested
-        # if correct_drift: self.correct_drift(quiet = quiet)
-
-
-    def correct_drift(self, force = False, quiet = False):
-
-        '''
-        calculate_time_shift adds one null sample (or deletes one sample) every X number of samples
-        X is determined through the GENEActiv Clock Drift measurement
-        Args:
-            force: bool
-                If time shift has already been done, the time_shifted will be True.
-                force is an optional parameter that neglects that and will shift regardless
-
-        Returns:
-
-        '''
-        if (self.drift_corrected and force) or (not self.drift_corrected):
-
-
-            self.remove_counter = abs(self.samples / (self.file_metadata["time_shift"] * self.file_metadata["measurement_frequency"]))
-
-            if not quiet: print("Correcting clock drift ...")
-
-            if self.metadata["time_shift"] > 0:
-                # We need to remove every nth value (n = remove_counter)
-                self.x = np.delete(self.x,
-                                   [int(self.remove_counter * i) for i in
-                                    range(int(len(self.x) / self.remove_counter))])
-
-                self.y = np.delete(self.y,
-                                   [int(self.remove_counter * i) for i in
-                                    range(int(len(self.y) / self.remove_counter))])
-
-                self.z = np.delete(self.z,
-                                   [int(self.remove_counter * i) for i in
-                                    range(int(len(self.z) / self.remove_counter))])
-
-                self.light = np.delete(self.light,
-                                       [int(self.remove_counter * i) for i in
-                                        range(int(len(self.light) / self.remove_counter))])
-
-                self.button = np.delete(self.button,
-                                        [int(self.remove_counter * i) for i in
-                                         range(int(len(self.button) / self.remove_counter))])
-
-            else:
-                # We need to add a 0 value every remove_counter indices
-                self.x = np.insert(self.x,
-                                   [int(self.remove_counter * i) for i in
-                                    range(int(len(self.x) / self.remove_counter))], 0)
-
-                self.y = np.insert(self.y,
-                                   [int(self.remove_counter * i) for i in
-                                    range(int(len(self.y) / self.remove_counter))], 0)
-
-                self.z = np.insert(self.z,
-                                   [int(self.remove_counter * i) for i in
-                                    range(int(len(self.z) / self.remove_counter))], 0)
-
-                self.light = np.insert(self.light,
-                                       [int(self.remove_counter * i) for i in
-                                        range(int(len(self.light) / self.remove_counter))], 0)
-
-                self.button = np.insert(self.button,
-                                        [int(self.remove_counter * i) for i in
-                                         range(int(len(self.button) / self.remove_counter))], 0)
-            self.drift_corrected = True
-
-            # CORRECT SAMPLE COUNTER AFTER DRIFT CORRECTION
-            
-        else:
-            print("Times have already been shifted. To shift again, run with param force=True")
-
 
     def create_pdf(self, pdf_folder, window_hours = 4, downsample = 5,
                    correct_drift = False, quiet = False):
