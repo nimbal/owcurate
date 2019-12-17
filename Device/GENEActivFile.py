@@ -5,8 +5,12 @@
 # ======================================== IMPORTS ========================================
 import numpy as np
 import datetime
-from os import listdir
-from os.path import isfile, join
+import os
+import shutil
+import fpdf
+import matplotlib.pyplot as plt
+import matplotlib.style as mstyle
+import matplotlib.dates as mdates
 
 ## == ISSUES =============================================
 
@@ -23,45 +27,51 @@ class GENEActivFile:
 
         # metadata stored in file header or related to entire file
         self.file_info = {          
-            "serial_num": "",
-            "device_type": "",
-            "temperature_units": "",
-            "measurement_frequency": "",
-            "temp_frequency" : "",
-            "measurement_period": "",
-            "start_time": "",
-            "study_centre": "",
-            "study_code": "",
-            "investigator_id": "",
-            "exercise_type": "",
-            "config_id": "",
-            "config_time": "",
-            "config_notes": "",
-            "extract_id": "",
-            "extract_time": "",
-            "extract_notes": "",
-            "device_location": "",
-            "subject_id": "",
-            "date_of_birth": "",
-            "sex": "",
-            "height": "",
-            "weight": "",
-            "handedness_code": "",
-            "subject_notes": "",
-            "number_of_pages": "",              # from header
+            "serial_num": None,
+            "device_type": None,
+            "temperature_units": None,
+            "measurement_frequency": None,
+            "temp_frequency" : None,
+            "measurement_period": None,
+            "start_time": None,
+            "study_centre": None,
+            "study_code": None,
+            "investigator_id": None,
+            "exercise_type": None,
+            "config_id": None,
+            "config_time": None,
+            "config_notes": None,
+            "extract_id": None,
+            "extract_time": None,
+            "extract_notes": None,
+            "device_location": None,
+            "subject_id": None,
+            "date_of_birth": None,
+            "sex": None,
+            "height": None,
+            "weight": None,
+            "handedness_code": None,
+            "subject_notes": None,
+            "number_of_pages": None,              # from header
             "pagecount" : None,                # count from datapacket
             "pagecount_match" : None,
             "samples" : None,
-            "x-gain": 0,
-            "x-offset": 0,
-            "y-gain" : 0,
-            "y-offset": 0,
-            "z-gain": 0,
-            "z-offset": 0,
-            "volts": 0,
-            "lux": 0}
-            # ADD RANGE calculations
-            # ADD SAMPLE RATES (TEMP DIFFERENT)
+            "x_gain": None,
+            "x_offset": None,
+            "y_gain" : None,
+            "y_offset": None,
+            "z_gain": None,
+            "z_offset": None,
+            "volts": None,
+            "lux": None,
+            "x_min" : None,
+            "y_min" : None,
+            "z_min" : None,
+            "x_max" : None,
+            "y_max" : None,
+            "z_max" : None,
+            "light_min" : None,
+            "light_max" : None}
 
         # data read from file (may be partial pages and/or downsampled - see file_metadata)
         self.data = {
@@ -95,6 +105,12 @@ class GENEActivFile:
 
         '''
 
+        # if file does not exist then exit
+        if not os.path.exists(self.file_path):
+
+            print(f"****** WARNING: {self.file_path} does not exist.\n")
+            return
+
         # Read GENEActiv .bin file
         if not quiet: print("Reading %s ..." % self.file_path)
         bin_file = open(self.file_path, "r", encoding="utf-8")
@@ -116,44 +132,51 @@ class GENEActivFile:
 
         # Extract and format relevant metadata from header
         self.file_info.update({
-            "serial_num": self.header["Device Unique Serial Code"],
-            "device_type": self.header["Device Type"],
-            "temperature_units": self.header["Temperature Sensor Units"],
-            "measurement_frequency": int(self.header["Measurement Frequency"].split(" ")[0]),
+            "serial_num" : self.header["Device Unique Serial Code"],
+            "device_type" : self.header["Device Type"],
+            "temperature_units" : self.header["Temperature Sensor Units"],
+            "measurement_frequency" : int(self.header["Measurement Frequency"].split(" ")[0]),
             "temp_frequency" : int(self.header["Measurement Frequency"].split(" ")[0]) / 300,
-            "measurement_period": int(self.header["Measurement Period"].split(" ")[0]), #???????
-            "start_time": datetime.datetime.strptime(self.data_packet[3][10:], "%Y-%m-%d %H:%M:%S:%f"),
-            "study_centre": self.header["Study Centre"],
-            "study_code": self.header["Study Code"],
-            "investigator_id": self.header["Investigator ID"],
-            "exercise_type": self.header["Exercise Type"],
-            "config_id": self.header["Config Operator ID"],
-            "config_time": datetime.datetime.strptime(self.header["Config Time"], "%Y-%m-%d %H:%M:%S:%f"),
-            "config_notes": self.header["Config Notes"],
-            "extract_id": self.header["Extract Operator ID"],
-            "extract_time": datetime.datetime.strptime(self.header["Extract Time"], "%Y-%m-%d %H:%M:%S:%f"),
-            "extract_notes": self.header["Extract Notes"],
-            "time_shift": float(self.header["Extract Notes"].split(" ")[3][:-2].replace(",", "")),
-            "device_location": self.header["Device Location Code"],
-            "subject_id": (int(self.header["Subject Code"]) if self.header["Subject Code"] is not "" else 0),
-            "date_of_birth": self.header["Date of Birth"],
-            "sex": self.header["Sex"],
-            "height": self.header["Height"],
-            "weight": self.header['Weight'],
-            "handedness_code": self.header["Handedness Code"],
-            "subject_notes": self.header["Subject Notes"],
-            "number_of_pages": int(self.header["Number of Pages"]),
-            "x-gain": int(self.header["x gain"]),
-            "x-offset": int(self.header["x offset"]),
-            "y-gain": int(self.header["y gain"]),
-            "y-offset": int(self.header["y offset"]),
-            "z-gain": int(self.header["z gain"]),
-            "z-offset": int(self.header["z offset"]),
-            "volts": int(self.header["Volts"]),
-            "lux": int(self.header["Lux"])
-        })
+            "measurement_period" : int(self.header["Measurement Period"].split(" ")[0]), #???????
+            "start_time" : datetime.datetime.strptime(self.data_packet[3][10:], "%Y-%m-%d %H:%M:%S:%f"),
+            "study_centre" : self.header["Study Centre"],
+            "study_code" : self.header["Study Code"],
+            "investigator_id" : self.header["Investigator ID"],
+            "exercise_type" : self.header["Exercise Type"],
+            "config_id" : self.header["Config Operator ID"],
+            "config_time" : datetime.datetime.strptime(self.header["Config Time"], "%Y-%m-%d %H:%M:%S:%f"),
+            "config_notes" : self.header["Config Notes"],
+            "extract_id" : self.header["Extract Operator ID"],
+            "extract_time" : datetime.datetime.strptime(self.header["Extract Time"], "%Y-%m-%d %H:%M:%S:%f"),
+            "extract_notes" : self.header["Extract Notes"],
+            "time_shift" : float(self.header["Extract Notes"].split(" ")[3][:-2].replace(",", "")),
+            "device_location" : self.header["Device Location Code"],
+            "subject_id" : self.header["Subject Code"],
+            "date_of_birth" : self.header["Date of Birth"],
+            "sex" : self.header["Sex"],
+            "height" : self.header["Height"],
+            "weight" : self.header['Weight'],
+            "handedness_code" : self.header["Handedness Code"],
+            "subject_notes" : self.header["Subject Notes"],
+            "number_of_pages" : int(self.header["Number of Pages"]),
+            "x_gain" : int(self.header["x gain"]),
+            "x_offset" : int(self.header["x offset"]),
+            "y_gain" : int(self.header["y gain"]),
+            "y_offset" : int(self.header["y offset"]),
+            "z_gain" : int(self.header["z gain"]),
+            "z_offset" : int(self.header["z offset"]),
+            "volts" : int(self.header["Volts"]),
+            "lux" : int(self.header["Lux"]),
+            "x_min" : (-204800 - int(self.header['x offset'])) / int(self.header['x gain']),
+            "y_min" : (-204800 - int(self.header['y offset'])) / int(self.header['y gain']),
+            "z_min" : (-204800 - int(self.header['z offset'])) / int(self.header['z gain']),
+            "x_max" : (204700 - int(self.header['x offset'])) / int(self.header['x gain']),
+            "y_max" : (204700 - int(self.header['y offset'])) / int(self.header['y gain']),
+            "z_max" : (204700 - int(self.header['z offset'])) / int(self.header['z gain']),
+            "light_min" : 0 * int(self.header['Lux']) / int(self.header['Volts']),
+            "light_max" : 1023 * int(self.header['Lux']) / int(self.header['Volts'])})
 
-        # get pagecount from data_packet
+        # calculate pagecount from data_packet
 
         # set match to true
         self.file_info["pagecount_match"] = True
@@ -215,8 +238,7 @@ class GENEActivFile:
         pagecount = self.file_info["pagecount"]
 
         # check whether data has been read
-        if (not self.header or self.data_packet is None
-            or pagecount is None):
+        if not self.header or self.data_packet is None or pagecount is None:
 
             print('****** WARNING: Cannot parse data because file has not',
                   'been read.\n')
@@ -242,12 +264,12 @@ class GENEActivFile:
 
         # get calibration variables
         if calibrate:
-            x_offset = self.file_info["x-offset"]
-            y_offset = self.file_info["y-offset"]
-            z_offset = self.file_info["z-offset"]
-            x_gain = self.file_info["x-gain"]
-            y_gain = self.file_info["y-gain"]
-            z_gain = self.file_info["z-gain"]
+            x_offset = self.file_info["x_offset"]
+            y_offset = self.file_info["y_offset"]
+            z_offset = self.file_info["z_offset"]
+            x_gain = self.file_info["x_gain"]
+            y_gain = self.file_info["y_gain"]
+            z_gain = self.file_info["z_gain"]
             volts = self.file_info["volts"]
             lux = self.file_info["lux"]
         
@@ -441,9 +463,264 @@ class GENEActivFile:
         else:
             print("Times have already been shifted. To shift again, run with param force=True")
 
-    def PDFSummary(self):
 
-        return 0
+    def create_pdf(self, pdf_folder, window_hours = 4, downsample = 5,
+                   correct_drift = False, quiet = False):
+
+        '''creates a pdf summary of the file
+        Parameters
+        ----------
+        pdf_folder : str
+            path to folder where pdf will be stored
+        window_hours : int
+            number of hours to display on each page (default = 4) -- if hour occurs
+            in the middle of a data page then time displayed on each pdf page may
+            be slightly less than the number of hours specified
+        downsample : int
+            factor by which to downsample (range: 1-6, default = 5)
+        correct_drift: bool
+            should sample rate be adjusted for clock drift? (default = False)
+        
+        Returns
+        -------
+        pdf_path : str
+            path to pdf file created
+        '''
+
+        # check whether data has been read
+        if not self.header or self.data_packet is None or self.file_info["pagecount"] is None:
+            print("****** WARNING: Cannot view data because file has not",
+                  "been read.")
+            return
+
+        if not quiet: print("Creating PDF summary ...")
+
+        # get filenames and paths     
+        bin_name = os.path.basename(self.file_path)
+
+        base_name = os.path.splitext(bin_name)[0]
+
+        pdf_name = base_name + ".pdf"
+        pdf_path = os.path.join(pdf_folder, pdf_name)
+
+        png_folder = os.path.join(pdf_folder, "temp", "")
+
+        # adjust sample rate for clock drift?
+        sample_rate = self.file_info["measurement_frequency"]
+
+        # calculate pages per plot
+        window_pages = round((window_hours * 60 * 60 * sample_rate) / 300)
+        window_sequence = range(1, round(self.file_info["pagecount"]), window_pages)
+        #window_sequence = range(1, window_pages*6, window_pages)
+
+        # CREATE PLOTS ------
+
+        if not quiet: print("Generating plots ...")
+
+        # define date locators and formatters
+        #hours = mdates.HourLocator()
+        #hours_fmt = mdates.DateFormatter('%H:%M')
+
+        # set plot parameters
+        
+        # each accel axis has a different min and max based on the digital range
+        # and the offset and gain values (-8 to 8 stated in the header is just
+        # a minimum range, actual range is slightly larger)
+
+        accel_min = min([self.file_info["x_min"],
+                         self.file_info["y_min"],
+                         self.file_info["z_min"]])
+        accel_max = max([self.file_info["x_max"],
+                         self.file_info["y_max"],
+                         self.file_info["z_max"]])        
+        accel_range = accel_max - accel_min
+        accel_buffer = accel_range * 0.1
+
+        light_min = self.file_info["light_min"]
+        light_max = self.file_info["light_max"]
+        light_range = light_max - light_min
+        light_buffer = light_range * 0.1
+                        
+        yaxis_lim = [[accel_min - accel_buffer, accel_max + accel_buffer],
+                    [accel_min - accel_buffer, accel_max + accel_buffer],
+                    [accel_min - accel_buffer, accel_max + accel_buffer],
+                    [light_min - light_buffer, light_max + light_buffer],
+                    [-0.01, 1],
+                    [9.99, 40.01]]
+
+        yaxis_ticks = [[-8, 0, 8],
+                       [-8, 0, 8],
+                       [-8, 0, 8],
+                       [0, 10000, 20000, 30000],
+                       [0, 1],
+                       [10, 20, 30, 40]]
+
+        yaxis_units = [self.header["Accelerometer Units"],
+                       self.header["Accelerometer Units"],
+                       self.header["Accelerometer Units"],
+                       self.header["Light Meter Units"],
+                       "",
+                       self.header["Temperature Sensor Units"]]
+
+        yaxis_lines = [[self.file_info["x_min"], 0, self.file_info["x_max"]],
+                       [self.file_info["y_min"], 0, self.file_info["y_max"]],
+                       [self.file_info["z_min"], 0, self.file_info["z_max"]],
+                       [light_min, light_max]]
+                       
+
+        line_color = ["b", "g", "r", "c", "m", "y"]
+
+        plt.rcParams["lines.linewidth"] = 0.25
+        plt.rcParams["figure.figsize"] = (6, 7.5)
+        plt.rcParams["figure.subplot.top"] = 0.92
+        plt.rcParams["figure.subplot.bottom"] = 0.06
+        plt.rcParams["font.size"] = 8
+
+        # create temp folder to store .png files
+        if not os.path.exists(png_folder): os.mkdir(png_folder)
+
+        # loop through time windows to create separate plot for each
+        for start_index in window_sequence:
+
+            # get data for current window
+            end_index = start_index + window_pages - 1
+            plot_data = self.parse_data(start = start_index,
+                                        end = end_index,
+                                        downsample = downsample,
+                                        update = False,
+                                        correct_drift = correct_drift,
+                                        quiet = quiet)
+
+            # format start and end date for current window
+            time_format = "%b %-d, %Y (%A) @ %H:%M:%S.%f"
+            window_start = plot_data["start_time"]
+            window_start_txt = window_start.strftime(time_format)[:-3]
+
+            window_end = window_start + datetime.timedelta(hours = window_hours)
+            window_end_txt = window_end.strftime(time_format)[:-3]
+
+            # initialize figure with subplots
+            fig, ax = plt.subplots(6, 1)
+
+            # insert date range as plot title
+            fig.suptitle(f'{window_start_txt} to {window_end_txt}',
+                         fontsize = 8, y = 0.96)
+
+            # initialize subplot index
+            subplot_index = 0
+
+            # loop through subplots and generate plot
+            for key in ["x", "y", "z", "light", "button", "temperature"]:
+
+                # plot signal
+                ax[subplot_index].plot(plot_data[key],
+                                       color = line_color[subplot_index])
+                
+                # remove box around plot
+                ax[subplot_index].spines["top"].set_visible(False)
+                ax[subplot_index].spines["bottom"].set_visible(False)
+                ax[subplot_index].spines["right"].set_visible(False)
+
+##                # set axis ticks and labels
+##                ax[subplot_index].xaxis.set_major_locator(hours)
+##                ax[subplot_index].xaxis.set_major_formatter(hours_fmt)
+##                if subplot_index != 5:
+##                    ax[subplot_index].set_xticklabels([])
+
+                ax[subplot_index].set_yticks(yaxis_ticks[subplot_index])
+                units = yaxis_units[subplot_index]
+                ax[subplot_index].set_ylabel(f'{key} ({units})')
+
+
+##                # set vertical lines on plot at hours
+##                ax[subplot_index].grid(True, 'major', 'x',
+##                                       color = 'k', linestyle = '--')
+
+                # set horizontal lines on plot at zero and limits
+                if subplot_index < 4:
+                    for yline in yaxis_lines[subplot_index]:
+                        ax[subplot_index].axhline(y = yline, color = 'grey',
+                                                  linestyle = '-')
+
+                # set axis limits
+                ax[subplot_index].set_ylim(yaxis_lim[subplot_index])
+##                ax[subplot_index].set_xlim(window_start,
+##                                           window_start +
+##                                           dt.timedelta(hours = 4))
+
+                # increment to next subplot
+                subplot_index += 1
+
+            # save figure as .png and close
+            png_file = 'plot_' + f'{start_index:09d}' + '.png'
+            fig.savefig(os.path.join(png_folder, png_file))
+            plt.close(fig)
+
+
+        # CREATE PDF ------
+
+        if not quiet: print("Building PDF ...") 
+
+        # HEADER PAGE ----------------
+
+        # initialize pdf
+        pdf = fpdf.FPDF(format = 'letter')
+
+        # add first page and print file name at top
+        pdf.add_page()
+        pdf.set_font("Courier", size = 16)
+        pdf.cell(200, 10, txt = bin_name, ln = 1, align = 'C', border = 0)
+
+        # set font for header info
+        pdf.set_font("Courier", size = 12)
+        header_text = '\n'
+
+        # find length of longest key in header
+        key_length = max(len(key) for key in self.header.keys()) + 1
+
+        # create text string for header information
+        for key, value in self.header.items():
+            header_text = header_text + f"{key:{key_length}}:  {value}\n"
+
+        # print header to pdf
+        pdf.multi_cell(200, 5, txt = header_text, align = 'L')
+
+        # PLOT DATA PAGES -------------
+
+        # list all .png files in temp folder
+        png_files = os.listdir(png_folder)
+        png_files.sort()
+
+        # loop through .png files to add to pdf
+        for png_file in png_files:
+
+            # create full .png file path
+            png_path = os.path.join(png_folder, png_file)
+
+            # add page and set font
+            pdf.add_page()
+            pdf.set_font("Courier", size = 16)
+
+            # print file_name as header
+            pdf.cell(0, txt = bin_name, align = 'C')
+            pdf.ln()
+
+            # insert .png plot into pdf
+            pdf.image(png_path, x = 1, y = 13, type = 'png')
+
+        # SAVE PDF AND DELETE PNGS --------------
+
+        if not quiet: print("Cleaning up ...")
+
+        # save pdf file
+        pdf.output(pdf_path)
+
+        # delete temp .png files
+        shutil.rmtree(png_folder)
+
+        if not quiet: print("Done creating PDF summary ...")
+                                     
+        return pdf_path
 
 
 
