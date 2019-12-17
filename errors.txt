@@ -1,0 +1,6 @@
+ERROR OCCURRED ON FILE OND07_WTL_3014_01_GA_RAnkle.bin
+index 693789 is out of bounds for axis 0 with size 693780
+
+
+ERROR OCCURRED ON FILE OND07_WTL_3018_01_GA_LWrist.bin
+ index 547009 is out of bounds for axis 0 with size 547000

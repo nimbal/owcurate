@@ -26,14 +26,15 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer", temperature="Temperat
             File name of the button path, if empty, will not output button
 
     Examples:
-        geneactiv = GENEActiv()
 
-        geneactiv.read_from_raw(path)
+        geneactiv = GENEActiv()                 #  Initializes GENEActive class instance
+        geneactiv.read_from_raw(path)           #  Reads the file from Binary File
+        geneactiv.calculate_time_shift()        #  Calculates the time shift
+        GENEActivToEDF(geneactiv, output_path)  #  Outputs the file to EDF format in the output_path
 
-        geneactiv.calculate_time_shift()
 
-        GENEActivToEDF(geneactiv, output_path)
-
+    Requires:
+        The output_path MUST have folders named "Accelerometer" "Light" "Button" "Temperature" inside of it
 
     Returns:
         EDF Files corresponding to above specifications
@@ -41,7 +42,8 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer", temperature="Temperat
 
     # Outputting Accelerometer Information
     if accel is not "":
-        accelerometer_file = pyedflib.EdfWriter("%s/%s/%s_Accelerometer.EDF" % (path, accel, GENEActiv.file_name[0][:-4]), 3)
+        accelerometer_file = pyedflib.EdfWriter("%s/%s/%s_Accelerometer.EDF" %
+                                                (path, accel, GENEActiv.file_name[0][:-4]), 3)
         accelerometer_file.setHeader({"technician": "",
                                       "recording_additional": "",
                                       "patientname": "",
@@ -51,7 +53,8 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer", temperature="Temperat
                                       "admincode": "",
                                       "gender": GENEActiv.metadata["sex"],
                                       "startdate": GENEActiv.metadata["start_time"],
-                                      "birthdate": datetime.datetime.strptime(GENEActiv.metadata["date_of_birth"], "%Y-%m-%d")})
+                                      "birthdate": datetime.datetime.strptime(GENEActiv.metadata["date_of_birth"],
+                                                                              "%Y-%m-%d")})
 
         accelerometer_file.setSignalHeader(0, {"label": "x", "dimension": "G", "sample_rate": 75,
                                                "physical_max": max(GENEActiv.x), "physical_min": min(GENEActiv.x),
@@ -72,7 +75,8 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer", temperature="Temperat
         accelerometer_file.close()
 
     if temperature is not "":
-        temperature_file = pyedflib.EdfWriter("%s/%s/%s_Temperature.EDF" % (path, temperature, GENEActiv.file_name[0][:-4]), 1)
+        temperature_file = pyedflib.EdfWriter("%s/%s/%s_Temperature.EDF" %
+                                              (path, temperature, GENEActiv.file_name[0][:-4]), 1)
 
         temperature_file.setHeader({"technician": "",
                                     "recording_additional": "",
@@ -83,10 +87,12 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer", temperature="Temperat
                                     "admincode": "",
                                     "gender": GENEActiv.metadata["sex"],
                                     "startdate": GENEActiv.metadata["start_time"],
-                                    "birthdate": datetime.datetime.strptime(GENEActiv.metadata["date_of_birth"], "%Y-%m-%d")})
+                                    "birthdate": datetime.datetime.strptime(GENEActiv.metadata["date_of_birth"],
+                                                                            "%Y-%m-%d")})
 
         temperature_file.setSignalHeader(0, {"label": "temperature", "dimension": "deg. C", "sample_rate": 1,
-                                             "physical_max": max(GENEActiv.temperature), "physical_min": min(GENEActiv.temperature),
+                                             "physical_max": max(GENEActiv.temperature),
+                                             "physical_min": min(GENEActiv.temperature),
                                              "digital_max": 32767, "digital_min": -32768,
                                              "prefilter": "pre1", "transducer": "trans1"})
 
@@ -127,7 +133,8 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer", temperature="Temperat
                                "admincode": "",
                                "gender": GENEActiv.metadata["sex"],
                                "startdate": GENEActiv.metadata["start_time"],
-                               "birthdate": datetime.datetime.strptime(GENEActiv.metadata["date_of_birth"], "%Y-%m-%d")})
+                               "birthdate": datetime.datetime.strptime(GENEActiv.metadata["date_of_birth"],
+                                                                       "%Y-%m-%d")})
 
         button_file.setSignalHeader(0, {"label": "button ", "dimension": "deg. C", "sample_rate": 75,
                                         "physical_max": max(GENEActiv.temperature),

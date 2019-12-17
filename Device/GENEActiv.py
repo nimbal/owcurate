@@ -16,6 +16,35 @@ class GENEActiv:
     TODO: FINISH PDF SUMMARY FUNCTION (MANUAL INSPECTION FUNCTION)
     """
     def __init__(self):
+        # metadata: Dict
+        #   Device metadata dictionary, contains information found in the GENEActiv Header
+        #   ONLY contains information about the participant and device, without calibration data
+        # calibration_info: Dict
+        #   Contains calibration information for running the signal extraction from the raw files
+        # time_shifted: Bool
+        #   Whether or not the time calibration has already been done
+        # x: np.array
+        #   Stores the x-channel accelerometer data
+        # y: np.array
+        #   Stores the y-channel accelerometer data
+        # z: np.array
+        #   Stores the z-channel acclerometer data
+        # temperature: np.array
+        #   Stores the temperature samples in an array
+        # light: np.array
+        #   Stores the light-sensor readings
+        # button: np.array
+        #   Stores the button sensor readings (whether the button on the GENEActiv device was pressed or not)
+        # samples: int
+        #   Number of samples within the file
+        # remove_counter: int
+        #   Number of samples to include before removing or appending an additional sample
+        # file: String
+        #   The file (explicit path) that the converter is being run from
+        # file_name: String
+        #   File name without directory
+        # working_directory: String
+        #   Explicit path without file name
         self.metadata = {
             "serial_num": "",
             "device_type": "",
@@ -53,8 +82,6 @@ class GENEActiv:
             "volts": 0,
             "lux": 0
         }
-
-        self.error_corrected = False
         self.time_shifted = False
         self.x = None
         self.y = None
@@ -64,6 +91,9 @@ class GENEActiv:
         self.button = None
         self.samples = 0
         self.remove_counter = 0
+        self.file = ""
+        self.file_name = ""
+        self.working_directory = ""
 
     def read_from_raw(self, path, quiet=False, parsehex=True):
         '''
@@ -73,7 +103,7 @@ class GENEActiv:
                 Input path
             quiet: Bool
                 Whether or not to print additional information
-                TODO: Figure out how to change this into -v command
+                TODO: Change this into -v command
             parsehex: Bool
                 Whether or not to parse the hexadecimal (as opposed to only returning header information)
 
