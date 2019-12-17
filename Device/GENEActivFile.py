@@ -12,7 +12,8 @@ import matplotlib.pyplot as plt
 import matplotlib.style as mstyle
 import matplotlib.dates as mdates
 
-## == ISSUES =============================================
+mstyle.use('fast')
+
 
 
 
@@ -83,7 +84,9 @@ class GENEActivFile:
             "temperature" : [],
             "light" : [],
             "button" : [],
-            "start_time": None,
+            "start_page" : None,
+            "end_page" : None,
+            "start_time" : None,
             "sample_rate" : None,
             "temp_sample_rate" : None}
 
@@ -303,15 +306,12 @@ class GENEActivFile:
         # loop through pages
         for data_line in data_chunk:
 
-            i = i + 1
+            i += 1
 
             # display progress
             if (i // 1000) * 1000 == i:
                 if not quiet:
                     print("Current Progress: %f %%" % (100 * i / total_pages))
-
-            # get temp from page header
-            #temp.append(float(self.data_packet[(i * 10) + 5].split(":")[-1]))
 
             # loop through measurements in page
             for j in range(0, 300, downsample):
@@ -368,6 +368,8 @@ class GENEActivFile:
                 "light" : np.array(light),
                 "button" : np.array(button),
                 "temperature" : np.array(temp),
+                "start_page" : start,
+                "end_page" : end,
                 "start_time" : start_time,
                 "sample_rate" : downsampled_rate,
                 "temp_sample_rate" : self.file_info["temp_frequency"]}
