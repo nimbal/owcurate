@@ -1,7 +1,7 @@
 # File to run QA on the raw file and the edf file
 
 
-from Files.Converters import *
+from Backups.Converters import *
 from Device.GENEActiv import *
 from os import listdir
 from os.path import join, isfile

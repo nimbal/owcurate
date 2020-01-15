@@ -4,14 +4,10 @@
 # ==================== NEUROSCIENCE BALANCE AND MOBILITY LABORATORY
 # ==================== UNIVERSITY OF WATERLOO
 # ====================================================================================================
-from Sensor.Sensor import *
-from Files.Converters import *
+from Backups.Converters import *
 from Device.GENEActiv import *
-from Subject import *
-from os import mkdir, listdir
+from os import listdir
 from os.path import isfile, join
-import sys
-
 
 # ======================================== VARIABLES ========================================
 input_dir = input()

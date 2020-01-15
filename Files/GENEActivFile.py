@@ -22,12 +22,14 @@ class GENEActivFile:
 
     def __init__(self, file_path):
 
-        self.file_path = file_path
+        self.file_path = os.path.abspath(file_path)
+        self.file_name = os.path.basename(self.file_path)
+        self.file_dir = os.path.dirname(self.file_path)
         self.header = {}
         self.data_packet = None
 
         # metadata stored in file header or related to entire file
-        self.file_info = {          
+        self.file_info = {
             "serial_num" : None,
             "device_type" : None,
             "temperature_units" : None,
@@ -119,9 +121,12 @@ class GENEActivFile:
         lines = np.array([line[:-1] for line in bin_file.readlines()])
         bin_file.close()
 
+        # Calculate number of lines in header
+        header_end = np.where(lines[:150]=="Recorded Data")[0][0]
+
         # Separate header and data packets
-        header_packet = lines[:59]
-        self.data_packet = lines[59:]
+        header_packet = lines[:header_end]
+        self.data_packet = lines[header_end:]
 
         # Parse header into header dict
         if not quiet: print("Parsing header information ...")
@@ -159,7 +164,7 @@ class GENEActivFile:
             "height" : self.header["Height"],
             "weight" : self.header['Weight'],
             "handedness_code" : self.header["Handedness Code"],
-            "subject_notes" : self.header["Subject Notes"],
+            "subject_notes" : self.header["Subject Notes"],                  #If there is a line break in your notes, will only show first line
             "number_of_pages" : int(self.header["Number of Pages"]),
             "x_gain" : int(self.header["x gain"]),
             "x_offset" : int(self.header["x offset"]),
@@ -219,7 +224,7 @@ class GENEActivFile:
                             correct_drift = correct_drift, update = update, quiet = quiet)
 
         if not quiet: print("Done reading file.")
-    
+
 
     def parse_data(self, start = 1, end = -1, downsample = 1, calibrate = True,
                    correct_drift = False, update = True, quiet = False):
@@ -276,7 +281,7 @@ class GENEActivFile:
             z_gain = self.file_info["z_gain"]
             volts = self.file_info["volts"]
             lux = self.file_info["lux"]
-        
+
         # initialize lists to temporarily hold read data
         temp = []
         x = []
@@ -302,7 +307,7 @@ class GENEActivFile:
 
 
         i = 0
-        
+
         # loop through pages
         for data_line in data_chunk:
 
@@ -311,7 +316,7 @@ class GENEActivFile:
             # display progress
             if (i // 1000) * 1000 == i:
                 if not quiet:
-                    print("Current Progress: %f %%" % (100 * i / total_pages))
+                    print("Current Progress: %r %%" % (round((100 * i / total_pages), 2)))
 
             # loop through measurements in page
             for j in range(0, 300, downsample):
@@ -383,10 +388,10 @@ class GENEActivFile:
             time_to_start = (data["start_time"] - self.file_info["config_time"]).total_seconds()
             adjust_start = int(time_to_start * data["sample_rate"] * abs(self.file_info["clock_drift_rate"]))
             adjust_start_temp = int(time_to_start * data["temp_sample_rate"] * abs(self.file_info["clock_drift_rate"]))
-          
+
             if self.file_info["clock_drift_rate"] > 0: #if drift is positive then remove extra samples
 
-                
+
                 for key in ["x", "y", "z", "light", "button", "temperature"]:
 
                     # delete data from each signal
@@ -400,7 +405,6 @@ class GENEActivFile:
                         data[key] = np.delete(data[key], range(adjust_start_temp))
                     else:
                         data[key] = np.delete(data[key], range(adjust_start))
-                
 
             else: #else add samples
 
@@ -496,7 +500,7 @@ class GENEActivFile:
         #hours_fmt = mdates.DateFormatter('%H:%M')
 
         # set plot parameters
-        
+
         # each accel axis has a different min and max based on the digital range
         # and the offset and gain values (-8 to 8 stated in the header is just
         # a minimum range, actual range is slightly larger)
@@ -506,7 +510,7 @@ class GENEActivFile:
                          self.file_info["z_min"]])
         accel_max = max([self.file_info["x_max"],
                          self.file_info["y_max"],
-                         self.file_info["z_max"]])        
+                         self.file_info["z_max"]])
         accel_range = accel_max - accel_min
         accel_buffer = accel_range * 0.1
 
@@ -514,7 +518,7 @@ class GENEActivFile:
         light_max = self.file_info["light_max"]
         light_range = light_max - light_min
         light_buffer = light_range * 0.1
-                        
+
         yaxis_lim = [[accel_min - accel_buffer, accel_max + accel_buffer],
                     [accel_min - accel_buffer, accel_max + accel_buffer],
                     [accel_min - accel_buffer, accel_max + accel_buffer],
@@ -540,7 +544,7 @@ class GENEActivFile:
                        [self.file_info["y_min"], 0, self.file_info["y_max"]],
                        [self.file_info["z_min"], 0, self.file_info["z_max"]],
                        [light_min, light_max]]
-                       
+
 
         line_color = ["b", "g", "r", "c", "m", "y"]
 
@@ -589,7 +593,7 @@ class GENEActivFile:
                 # plot signal
                 ax[subplot_index].plot(plot_data[key],
                                        color = line_color[subplot_index])
-                
+
                 # remove box around plot
                 ax[subplot_index].spines["top"].set_visible(False)
                 ax[subplot_index].spines["bottom"].set_visible(False)
@@ -633,7 +637,7 @@ class GENEActivFile:
 
         # CREATE PDF ------
 
-        if not quiet: print("Building PDF ...") 
+        if not quiet: print("Building PDF ...")
 
         # HEADER PAGE ----------------
 
@@ -693,9 +697,5 @@ class GENEActivFile:
         shutil.rmtree(png_folder)
 
         if not quiet: print("Done creating PDF summary ...")
-                                     
+
         return pdf_path
-
-
-
-

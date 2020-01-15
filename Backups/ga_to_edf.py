@@ -2,16 +2,14 @@
 
 
 # ======================================== IMPORTS ========================================
-import owcurate.Files.GENEActivFile
-#from Device.GENEActiv import *
-#from Device.Bittium import *
+from Files.GENEActivFile import *
+from Device.GENEActiv import *
+from Device.Bittium import *
 import pyedflib
-import os
-import datetime
 
 
 # ======================================== DEFINITIONS ========================================
-def GENEActivToEDF(GENEActiv, path, accel="Accelerometer", temperature="Temperature", light="Light", button="Button"):
+def ga_to_edf(input, path, accel="Accelerometer", temperature="Temperature", light="Light", button="Button"):
     '''
     GENEActivToEDF is a universal class that takes GENEActiv device output and transforms it into EDF Files
     Args:
@@ -42,111 +40,110 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer", temperature="Temperat
     Returns:
         EDF Files corresponding to above specifications
     '''
-    ga_file_name = os.path.basename(GENEActiv.file_path)
-    base_name = os.path.splitext(ga_file_name)[0]
 
     # Outputting Accelerometer Information
     if accel is not "":
         accelerometer_file = pyedflib.EdfWriter("%s/%s/%s_Accelerometer.EDF" %
-                                                (path, accel, base_name), 3)
+                                                (path, accel, GENEActiv.file_name[0][:-4]), 3)
         accelerometer_file.setHeader({"technician": "",
                                       "recording_additional": "",
                                       "patientname": "",
                                       "patient_additional": "",
-                                      "patientcode": GENEActiv.file_info["subject_id"],
+                                      "patientcode": "%i" % GENEActiv.metadata["subject_id"],
                                       "equipment": "GENEActiv",
                                       "admincode": "",
-                                      "gender": GENEActiv.file_info["sex"],
-                                      "startdate": GENEActiv.file_info["start_time"],
-                                      "birthdate": datetime.datetime.strptime(GENEActiv.file_info["date_of_birth"],
+                                      "gender": GENEActiv.metadata["sex"],
+                                      "startdate": GENEActiv.metadata["start_time"],
+                                      "birthdate": datetime.datetime.strptime(GENEActiv.metadata["date_of_birth"],
                                                                               "%Y-%m-%d")})
 
         accelerometer_file.setSignalHeader(0, {"label": "x", "dimension": "G", "sample_rate": 75,
-                                               "physical_max": GENEActiv.file_info["x_max"], "physical_min": GENEActiv.file_info["x_min"],
+                                               "physical_max": max(GENEActiv.x), "physical_min": min(GENEActiv.x),
                                                "digital_max": 32767, "digital_min": -32768,
                                                "prefilter": "pre1", "transducer": "trans1"})
 
         accelerometer_file.setSignalHeader(1, {"label": "y", "dimension": "G", "sample_rate": 75,
-                                               "physical_max": GENEActiv.file_info["y_max"], "physical_min": GENEActiv.file_info["y_min"],
+                                               "physical_max": max(GENEActiv.y), "physical_min": min(GENEActiv.y),
                                                "digital_max": 32767, "digital_min": -32768,
                                                "prefilter": "pre1", "transducer": "trans1"})
 
         accelerometer_file.setSignalHeader(2, {"label": "z", "dimension": "G", "sample_rate": 75,
-                                               "physical_max": GENEActiv.file_info["z_max"], "physical_min": GENEActiv.file_info["z_min"],
+                                               "physical_max": max(GENEActiv.z), "physical_min": min(GENEActiv.z),
                                                "digital_max": 32767, "digital_min": -32768,
                                                "prefilter": "pre1", "transducer": "trans1"})
 
-        accelerometer_file.writeSamples([GENEActiv.data["x"], GENEActiv.data["y"], GENEActiv.data["z"]])
+        accelerometer_file.writeSamples([GENEActiv.x, GENEActiv.y, GENEActiv.z])
         accelerometer_file.close()
 
     if temperature is not "":
         temperature_file = pyedflib.EdfWriter("%s/%s/%s_Temperature.EDF" %
-                                              (path, temperature, base_name), 1)
+                                              (path, temperature, GENEActiv.file_name[0][:-4]), 1)
 
         temperature_file.setHeader({"technician": "",
                                     "recording_additional": "",
                                     "patientname": "",
                                     "patient_additional": "",
-                                    "patientcode": GENEActiv.file_info["subject_id"],
+                                    "patientcode": "%i" % GENEActiv.metadata["subject_id"],
                                     "equipment": "GENEActiv",
                                     "admincode": "",
-                                    "gender": GENEActiv.file_info["sex"],
-                                    "startdate": GENEActiv.file_info["start_time"],
-                                    "birthdate": datetime.datetime.strptime(GENEActiv.file_info["date_of_birth"],
+                                    "gender": GENEActiv.metadata["sex"],
+                                    "startdate": GENEActiv.metadata["start_time"],
+                                    "birthdate": datetime.datetime.strptime(GENEActiv.metadata["date_of_birth"],
                                                                             "%Y-%m-%d")})
 
         temperature_file.setSignalHeader(0, {"label": "temperature", "dimension": "deg. C", "sample_rate": 1,
-                                             "physical_max": max(GENEActiv.data["temperature"]),
-                                             "physical_min": min(GENEActiv.data["temperature"]),
+                                             "physical_max": max(GENEActiv.temperature),
+                                             "physical_min": min(GENEActiv.temperature),
                                              "digital_max": 32767, "digital_min": -32768,
                                              "prefilter": "pre1", "transducer": "trans1"})
 
-        temperature_file.writeSamples([GENEActiv.data["temperature"]])
+        temperature_file.writeSamples([np.array(GENEActiv.temperature)])
         temperature_file.close()
 
     if light is not "":
-        light_file = pyedflib.EdfWriter("%s/%s/%s_Light.EDF" % (path, light, base_name), 1)
+        light_file = pyedflib.EdfWriter("%s/%s/%s_Light.EDF" % (path, light, GENEActiv.file_name[0][:-4]), 1)
 
         light_file.setHeader({"technician": "",
                               "recording_additional": "",
                               "patientname": "",
                               "patient_additional": "",
-                              "patientcode": GENEActiv.file_info["subject_id"],
+                              "patientcode": "%i" % GENEActiv.metadata["subject_id"],
                               "equipment": "GENEActiv",
                               "admincode": "",
-                              "gender": GENEActiv.file_info["sex"],
-                              "startdate": GENEActiv.file_info["start_time"],
-                              "birthdate": datetime.datetime.strptime(GENEActiv.file_info["date_of_birth"], "%Y-%m-%d")})
+                              "gender": GENEActiv.metadata["sex"],
+                              "startdate": GENEActiv.metadata["start_time"],
+                              "birthdate": datetime.datetime.strptime(GENEActiv.metadata["date_of_birth"], "%Y-%m-%d")})
 
         light_file.setSignalHeader(0, {"label": "light", "dimension": "deg. C", "sample_rate": 75,
-                                       "physical_max": GENEActiv.file_info["light_max"], "physical_min": GENEActiv.file_info["light_min"],
+                                       "physical_max": max(GENEActiv.temperature),
+                                       "physical_min": min(GENEActiv.temperature),
                                        "digital_max": 32767, "digital_min": -32768,
                                        "prefilter": "pre1", "transducer": "trans1"})
 
-        light_file.writeSamples([GENEActiv.data["light"]])
+        light_file.writeSamples([np.array(GENEActiv.light)])
         light_file.close()
 
     if button is not "":
-        button_file = pyedflib.EdfWriter("%s/%s/%s_Button.EDF" % (path, button, base_name), 1)
+        button_file = pyedflib.EdfWriter("%s/%s/%s_Button.EDF" % (path, button, GENEActiv.file_name[0][:-4]), 1)
         button_file.setHeader({"technician": "",
                                "recording_additional": "",
                                "patientname": "",
                                "patient_additional": "",
-                               "patientcode": GENEActiv.file_info["subject_id"],
+                               "patientcode": "%i" % GENEActiv.metadata["subject_id"],
                                "equipment": "GENEActiv",
                                "admincode": "",
-                               "gender": GENEActiv.file_info["sex"],
-                               "startdate": GENEActiv.file_info["start_time"],
-                               "birthdate": datetime.datetime.strptime(GENEActiv.file_info["date_of_birth"],
+                               "gender": GENEActiv.metadata["sex"],
+                               "startdate": GENEActiv.metadata["start_time"],
+                               "birthdate": datetime.datetime.strptime(GENEActiv.metadata["date_of_birth"],
                                                                        "%Y-%m-%d")})
 
         button_file.setSignalHeader(0, {"label": "button ", "dimension": "deg. C", "sample_rate": 75,
-                                        "physical_max": max(GENEActiv.data["button"]),
-                                        "physical_min": min(GENEActiv.data["button"]),
+                                        "physical_max": max(GENEActiv.temperature),
+                                        "physical_min": min(GENEActiv.temperature),
                                         "digital_max": 32767, "digital_min": -32768,
                                         "prefilter": "pre1", "transducer": "trans1"})
 
-        button_file.writeSamples([GENEActiv.data["button"]])
+        button_file.writeSamples([np.array(GENEActiv.button)])
         button_file.close()
 
 

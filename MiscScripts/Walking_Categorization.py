@@ -1,10 +1,8 @@
 # ======================================== IMPORTS
-from Subject import *
-from Files.Converters import *
+from MiscScripts.Subject import *
+from Backups.Converters import *
 import matplotlib
-import tensorflow as tf
 import numpy as np
-import sklearn
 from sklearn.model_selection import train_test_split
 import keras
 

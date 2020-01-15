@@ -3,9 +3,6 @@
 
 
 # ======================================== IMPORTS ========================================
-from Device.GENEActiv import *
-from Device.Bittium import *
-from Files.Converters import *
 from Sensor.Sensor import *
 
 

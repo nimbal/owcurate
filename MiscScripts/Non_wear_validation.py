@@ -4,12 +4,11 @@
 # ==================== NEUROSCIENCE BALANCE AND MOBILITY LAB
 # ==================== UNIVERSITY OF WATERLOO
 # ====================================================================================================
-from Files.Converters import *
+from Backups.Converters import *
 from Sensor.Sensor import *
 import datetime
 from pandas.plotting import register_matplotlib_converters
 import seaborn as sns
-from matplotlib import style
 
 # ======================================== INITIALIZING CONSTANTS AND VARIABLES
 register_matplotlib_converters()
