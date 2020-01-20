@@ -3,11 +3,11 @@
 
 
 # ======================================== IMPORTS ========================================
-from Files.GENEActivFile import *
+from GENEActivFile import *
 import pyedflib
 
 
-# ======================================== DEFINITIONS ========================================
+# ======================================== FUNCTIONS ========================================
 def ga_to_edf(input_file_path, accel_dir, temperature_dir, light_dir, button_dir, correct_drift=True, quiet=False):
     """
     The ga_to_edf is a function that takes a binary file provided by the GENEActiv device and converts it into an EDF format.
@@ -26,7 +26,7 @@ def ga_to_edf(input_file_path, accel_dir, temperature_dir, light_dir, button_dir
         correct_drift: Bool
             Should the function correct the clock drift on the incoming data?
         quiet: Bool
-            Should the function silence printed out progress update?
+            Silence the print function?
 
 
     Example(s):
@@ -42,6 +42,7 @@ def ga_to_edf(input_file_path, accel_dir, temperature_dir, light_dir, button_dir
         EDF Files corresponding to above specifications
     """
 
+
     # Initialize GENEActiveFile class
     geneactivfile = GENEActivFile(input_file_path)
 
@@ -49,11 +50,12 @@ def ga_to_edf(input_file_path, accel_dir, temperature_dir, light_dir, button_dir
     geneactivfile.read(geneactivfile, correct_drift=correct_drift, quiet=quiet)
 
     # Outputting Accelerometer Information
-    print("Starting EDF Conversion.")
-    if accel_dir is not "":
-        print("Building Accelerometer EDF...")
+    if not quiet: print("Starting EDF Conversion.")
+    if accel_dir != "":
+        if not quiet: print("Building Accelerometer EDF...")
         accel_dir = os.path.abspath(accel_dir)
-        accelerometer_file = pyedflib.EdfWriter("%s/%s_Accelerometer.EDF" % (accel_dir, geneactivfile.file_name.replace("_GA_", "_GENEActiv_")[:-4]), 3)
+        accelerometer_file = pyedflib.EdfWriter("%s/%s_Accel.EDF" % (accel_dir, geneactivfile.file_name.replace("_GA_", "_GENEActiv_")[:-4]), 3)
+        if not quiet: print(geneactivfile.file_info["date_of_birth"])
         accelerometer_file.setHeader({"technician": "",
                                       "recording_additional": "",
                                       "patientname": "",
@@ -86,10 +88,10 @@ def ga_to_edf(input_file_path, accel_dir, temperature_dir, light_dir, button_dir
         accelerometer_file.writeSamples([geneactivfile.data['x'], geneactivfile.data['y'], geneactivfile.data['z']])
         accelerometer_file.close()
 
-    if temperature_dir is not "":
-        print("Building Temperature EDF...")
+    if temperature_dir != "":
+        if not quiet: print("Building Temperature EDF...")
         temperature_dir = os.path.abspath(temperature_dir)
-        temperature_file = pyedflib.EdfWriter("%s/%s_Temperature.EDF" % (temperature_dir, geneactivfile.file_name.replace("_GA_", "_GENEActiv_")[:-4]),1)
+        temperature_file = pyedflib.EdfWriter("%s/%s_Temp.EDF" % (temperature_dir, geneactivfile.file_name.replace("_GA_", "_GENEActiv_")[:-4]),1)
         temperature_file.setHeader({"technician": "",
                                     "recording_additional": "",
                                     "patientname": "",
@@ -110,8 +112,8 @@ def ga_to_edf(input_file_path, accel_dir, temperature_dir, light_dir, button_dir
         temperature_file.writeSamples([np.array(geneactivfile.data["temperature"])])
         temperature_file.close()
 
-    if light_dir is not "":
-        print("Building Light EDF...")
+    if light_dir != "":
+        if not quiet: print("Building Light EDF...")
         light_dir = os.path.abspath(light_dir)
         light_file = pyedflib.EdfWriter("%s/%s_Light.EDF" % (light_dir, geneactivfile.file_name.replace("_GA_", "_GENEActiv_")[:-4]), 1)
         light_file.setHeader({"technician": "",
@@ -134,8 +136,8 @@ def ga_to_edf(input_file_path, accel_dir, temperature_dir, light_dir, button_dir
         light_file.writeSamples([np.array(geneactivfile.data["light"])])
         light_file.close()
 
-    if button_dir is not "":
-        print("Building Button EDF...")
+    if button_dir != "":
+        if not quiet: print("Building Button EDF...")
         button_dir = os.path.abspath(button_dir)
         button_file = pyedflib.EdfWriter("%s/%s_Button.EDF" % (button_dir, geneactivfile.file_name.replace("_GA_", "_GENEActiv_")[:-4]), 1)
         button_file.setHeader({"technician": "",
@@ -158,7 +160,7 @@ def ga_to_edf(input_file_path, accel_dir, temperature_dir, light_dir, button_dir
 
         button_file.writeSamples([np.array(geneactivfile.data["button"])])
         button_file.close()
-    print("EDF Conversion Complete.")
+    if not quiet: print("EDF Conversion Complete.")
 
 
 def edf_to_sensor(sensor, accel, ecg, temperature, light, button, metadata="accel"):
@@ -189,7 +191,7 @@ def edf_to_sensor(sensor, accel, ecg, temperature, light, button, metadata="acce
     Returns:
 
     """
-    if accel is not "":
+    if accel != "":
         sensor.init_accelerometer()
         with pyedflib.EdfReader(accel) as accelerometer_file:
             header = accelerometer_file.getHeader()
@@ -211,19 +213,19 @@ def edf_to_sensor(sensor, accel, ecg, temperature, light, button, metadata="acce
             })
             sensor.accelerometer.start_time = sensor.metadata["start_time"]
 
-    if temperature is not "":
+    if temperature != "":
         sensor.init_thermometer()
         with pyedflib.EdfReader(temperature) as temperature_file:
             sensor.thermometer.frequency = temperature_file.getSignalHeader(0)["sample_rate"]
             sensor.thermometer.temperatures = temperature_file.readSignal(0)
 
-    if light is not "":
+    if light != "":
         sensor.init_light()
         with pyedflib.EdfReader(light) as light_file:
             sensor.light.frequency = light_file.getSignalHeader(0)["sample_rate"]
             sensor.light.light = light_file.readSignal(0)
 
-    if button is not "":
+    if button != "":
         sensor.init_button()
         with pyedflib.EdfReader(button) as button_file:
             sensor.light.frequency = button_file.getSignalHeader(0)["sample_rate"]
