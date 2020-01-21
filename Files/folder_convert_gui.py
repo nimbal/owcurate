@@ -67,3 +67,6 @@ def folder_convert_gui(input='',output='', correct_drift=True, overwrite=False, 
 
     # Run script using values obtained from GUI input
     folder_convert(values[0],values[1],values[2],values[3],values[4])
+       
+# Call function to make file work like an executable
+folder_convert_gui()
