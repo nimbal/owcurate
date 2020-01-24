@@ -152,7 +152,7 @@ def GENEActivToEDF(GENEActiv, path, accel="Accelerometer", temperature="Temperat
         button_file.close()
 
 
-def EDFToSensor(sensor, accel, ecg, temperature, light, button, metadata="accel"):
+def EDFToSensor(sensor, accel, ecg, temperature, light, button, metadata="accelerometer"):
     '''
     EDFToSensor function reads multiple EDF files and transforms them into a universal Sensor class in memory
 
@@ -173,7 +173,7 @@ def EDFToSensor(sensor, accel, ecg, temperature, light, button, metadata="accel"
             File name of the Light sensor file to be read in
         button: String
             File name of the button sensor file to be read in
-        metadata: One of "accel", "ecg", "temperature", "light", "button" that is not empty
+        metadata: One of "accelerometer", "ecg", "temperature", "light", "button" that is not empty
             Chooses which file to return the metadata from (for the overall sensor)
             Not complete yet
 

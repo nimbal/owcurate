@@ -32,11 +32,19 @@ class GENEActivFile:
         self.file_info = {
             "serial_num" : None,
             "device_type" : None,
+            "accelerometer_units": None,
+            "accelerometer_physical_min" : None,
+            "accelerometer_physical_max": None,
             "temperature_units" : None,
+            "temperature_physical_max" : None,
+            "temperature_physical_min": None,
+            "light_units" : None,
+            "light__physical_max" :None,
+            "light__physical_min": None,
             "measurement_frequency" : None,
-            "temp_frequency" : None,
+            "temperature_frequency" : None,
             "measurement_period" : None,
-            "start_time" : None,
+            "start_time" : None,  # Using first 'Page Time' rather than "start time" because its half a millisecond ahead
             "study_centre" : None,
             "study_code" : None,
             "investigator_id" : None,
@@ -97,7 +105,7 @@ class GENEActivFile:
              calibrate = True, correct_drift = False, update = True, quiet = False):
 
         '''
-        read_from_raw reads a raw GENEActiv .bin file
+        read() reads a raw GENEActiv .bin file
         Args:
             parse_data: Bool
                 Whether or not to parse the hexadecimal (as opposed to only returning header information)
@@ -118,11 +126,11 @@ class GENEActivFile:
         # Read GENEActiv .bin file
         if not quiet: print("Reading %s ..." % self.file_path)
         bin_file = open(self.file_path, "r", encoding="utf-8")
-        lines = np.array([line[:-1] for line in bin_file.readlines()])
+        lines = [line[:-1] for line in bin_file.readlines()]
         bin_file.close()
 
         # Calculate number of lines in header
-        header_end = np.where(lines[:150]=="Recorded Data")[0][0]
+        header_end = lines[:150].index("Recorded Data")
 
         # Separate header and data packets
         header_packet = lines[:header_end]
@@ -141,11 +149,19 @@ class GENEActivFile:
         self.file_info.update({
             "serial_num" : self.header["Device Unique Serial Code"],
             "device_type" : self.header["Device Type"],
+            "accelerometer_units": self.header['Accelerometer Units'],
+            "accelerometer_physical_min" : int(self.header['Accelerometer Range'][:2]),
+            "accelerometer_physical_max": int(self.header['Accelerometer Range'][6]),
             "temperature_units" : self.header["Temperature Sensor Units"],
+            "temperature_physical_max" : int(self.header["Temperature Sensor Range"][0]),
+            "temperature_physical_min": int(self.header["Temperature Sensor Range"][5:7]),
+            "light_units" : self.header["Light Meter Units"],
+            "light_physical_max" :int(self.header["Light Meter Range"][0]),
+            "light_physical_min": int(self.header["Light Meter Range"][5:9]),
             "measurement_frequency" : int(self.header["Measurement Frequency"].split(" ")[0]),
-            "temp_frequency" : int(self.header["Measurement Frequency"].split(" ")[0]) / 300,
+            "temperature_frequency" : int(self.header["Measurement Frequency"].split(" ")[0]) / 300,
             "measurement_period" : int(self.header["Measurement Period"].split(" ")[0]), #???????
-            "start_time" : datetime.datetime.strptime(self.data_packet[3][10:], "%Y-%m-%d %H:%M:%S:%f"),
+            "start_time" : datetime.datetime.strptime(self.data_packet[3][10:], "%Y-%m-%d %H:%M:%S:%f"),  # Using first 'Page Time' rather than "start time" because its half a millisecond ahead
             "study_centre" : self.header["Study Centre"],
             "study_code" : self.header["Study Code"],
             "investigator_id" : self.header["Investigator ID"],
@@ -228,7 +244,6 @@ class GENEActivFile:
 
     def parse_data(self, start = 1, end = -1, downsample = 1, calibrate = True,
                    correct_drift = False, update = True, quiet = False):
-
         def twos_comp(val, bits):
             """ This method calculates the twos complement value of the current bit
             Args:
@@ -283,7 +298,7 @@ class GENEActivFile:
             lux = self.file_info["lux"]
 
         # initialize lists to temporarily hold read data
-        temp = []
+        temperature = []
         x = []
         y = []
         z = []
@@ -355,14 +370,14 @@ class GENEActivFile:
                 button.append(meas_button)
 
 
-        # get all temp lines from data packet (1 per page)
-        temp_chunk = [self.data_packet[i]
+        # get all temperature lines from data packet (1 per page)
+        temperature_chunk = [self.data_packet[i]
                       for i in range((start - 1) * 10 + 5, end * 10, 10)]
 
-        # parse temp from temp lines and insert into dict
-        for temp_line in temp_chunk:
-            colon = temp_line.index(':')
-            temp.append(float(temp_line[colon + 1:]))
+        # parse temperature from temperature lines and insert into dict
+        for temperature_line in temperature_chunk:
+            colon = temperature_line.index(':')
+            temperature.append(float(temperature_line[colon + 1:]))
 
 
         if not quiet: print("Storing parsed data ...")
@@ -372,12 +387,12 @@ class GENEActivFile:
                 "z" : np.array(z),
                 "light" : np.array(light),
                 "button" : np.array(button),
-                "temperature" : np.array(temp),
+                "temperature" : np.array(temperature),
                 "start_page" : start,
                 "end_page" : end,
                 "start_time" : start_time,
                 "sample_rate" : downsampled_rate,
-                "temp_sample_rate" : self.file_info["temp_frequency"]}
+                "temperature_sample_rate" : self.file_info["temperature_frequency"]}
 
          # correct clock drift
         if correct_drift:
@@ -387,7 +402,7 @@ class GENEActivFile:
             adjust_rate = abs(1 / self.file_info["clock_drift_rate"])
             time_to_start = (data["start_time"] - self.file_info["config_time"]).total_seconds()
             adjust_start = int(time_to_start * data["sample_rate"] * abs(self.file_info["clock_drift_rate"]))
-            adjust_start_temp = int(time_to_start * data["temp_sample_rate"] * abs(self.file_info["clock_drift_rate"]))
+            adjust_start_temperature = int(time_to_start * data["temperature_sample_rate"] * abs(self.file_info["clock_drift_rate"]))
 
             if self.file_info["clock_drift_rate"] > 0: #if drift is positive then remove extra samples
 
@@ -401,8 +416,8 @@ class GENEActivFile:
 
 
                     # delete data from start of each signal to account for time from config to start
-                    if key is "temperature":
-                        data[key] = np.delete(data[key], range(adjust_start_temp))
+                    if key == "temperature":
+                        data[key] = np.delete(data[key], range(adjust_start_temperature))
                     else:
                         data[key] = np.delete(data[key], range(adjust_start))
 
@@ -417,8 +432,8 @@ class GENEActivFile:
 
 
                     # insert data into start of each signal to account for time from config to start
-                    if key is "temperature":
-                        data[key] = np.insert(data[key], 0, [0] * adjust_start_temp)
+                    if key == "temperature":
+                        data[key] = np.insert(data[key], 0, [0] * adjust_start_temperature)
                     else:
                         data[key] = np.insert(data[key], 0, [0] * adjust_start)
 
@@ -481,7 +496,7 @@ class GENEActivFile:
         pdf_name = base_name + ".pdf"
         pdf_path = os.path.join(pdf_folder, pdf_name)
 
-        png_folder = os.path.join(pdf_folder, "temp", "")
+        png_folder = os.path.join(pdf_folder, "temperature", "")
 
         # adjust sample rate for clock drift?
         sample_rate = self.file_info["measurement_frequency"]
@@ -501,27 +516,27 @@ class GENEActivFile:
 
         # set plot parameters
 
-        # each accel axis has a different min and max based on the digital range
+        # each accelerometer axis has a different min and max based on the digital range
         # and the offset and gain values (-8 to 8 stated in the header is just
         # a minimum range, actual range is slightly larger)
 
-        accel_min = min([self.file_info["x_min"],
+        accelerometer_min = min([self.file_info["x_min"],
                          self.file_info["y_min"],
                          self.file_info["z_min"]])
-        accel_max = max([self.file_info["x_max"],
+        accelerometer_max = max([self.file_info["x_max"],
                          self.file_info["y_max"],
                          self.file_info["z_max"]])
-        accel_range = accel_max - accel_min
-        accel_buffer = accel_range * 0.1
+        accelerometer_range = accelerometer_max - accelerometer_min
+        accelerometer_buffer = accelerometer_range * 0.1
 
         light_min = self.file_info["light_min"]
         light_max = self.file_info["light_max"]
         light_range = light_max - light_min
         light_buffer = light_range * 0.1
 
-        yaxis_lim = [[accel_min - accel_buffer, accel_max + accel_buffer],
-                    [accel_min - accel_buffer, accel_max + accel_buffer],
-                    [accel_min - accel_buffer, accel_max + accel_buffer],
+        yaxis_lim = [[accelerometer_min - accelerometer_buffer, accelerometer_max + accelerometer_buffer],
+                    [accelerometer_min - accelerometer_buffer, accelerometer_max + accelerometer_buffer],
+                    [accelerometer_min - accelerometer_buffer, accelerometer_max + accelerometer_buffer],
                     [light_min - light_buffer, light_max + light_buffer],
                     [-0.01, 1],
                     [9.99, 40.01]]
@@ -554,7 +569,7 @@ class GENEActivFile:
         plt.rcParams["figure.subplot.bottom"] = 0.06
         plt.rcParams["font.size"] = 8
 
-        # create temp folder to store .png files
+        # create temperature folder to store .png files
         if not os.path.exists(png_folder): os.mkdir(png_folder)
 
         # loop through time windows to create separate plot for each
@@ -665,7 +680,7 @@ class GENEActivFile:
 
         # PLOT DATA PAGES -------------
 
-        # list all .png files in temp folder
+        # list all .png files in temperature folder
         png_files = os.listdir(png_folder)
         png_files.sort()
 
@@ -693,7 +708,7 @@ class GENEActivFile:
         # save pdf file
         pdf.output(pdf_path)
 
-        # delete temp .png files
+        # delete temperature .png files
         shutil.rmtree(png_folder)
 
         if not quiet: print("Done creating PDF summary ...")

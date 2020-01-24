@@ -497,7 +497,7 @@ class GENEActivFile:
 
         # set plot parameters
 
-        # each accel axis has a different min and max based on the digital range
+        # each accelerometer axis has a different min and max based on the digital range
         # and the offset and gain values (-8 to 8 stated in the header is just
         # a minimum range, actual range is slightly larger)
 
