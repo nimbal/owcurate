@@ -1,9 +1,15 @@
+# Author:  Adam Vert
+# Date:  January, 2020
+
+
+# ======================================== IMPORTS ========================================
+
 import PySimpleGUI as sg
 import os
-import sys
 from folder_convert_script import folder_convert
 
 
+# ======================================== FUNCTION =========================================
 def folder_convert_gui(input='', output='', device_edf = False, correct_drift=True, overwrite=False, quiet=False):
     """
         The folder_convert_gui function takes a creates a graphical interface for the folder_conver() function
@@ -13,6 +19,8 @@ def folder_convert_gui(input='', output='', device_edf = False, correct_drift=Tr
                 Path to directory with all the binary GENEActive files
             output: string
                 Path to head directory where you want all the EDF files to go ([ONDO5]_[GENEActiv] in Folder structure example)
+            device_edf: Bool
+                Do you want the function to create a device wide EDF file that stores all 5 sensors in one EDF file
             correct_drift: Bool
                 Should the function correct the clock drift on the incoming data?
             overwrite: Bool
@@ -26,7 +34,6 @@ def folder_convert_gui(input='', output='', device_edf = False, correct_drift=Tr
         Returns:
             - EDF Files for all
             - A csv file list for each of the 4 parameters (Accelerometer, Temperature, Light, Button)
-
         """
 
     # Set colour scheme of GUI

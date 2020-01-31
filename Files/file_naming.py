@@ -1,6 +1,7 @@
-from Files.GENEActivFile import *
+# Author:  Adam Vert
+# Date:  January, 2020
 
-
+# ======================================== FUNCTION =========================================
 def file_naming(geneactivfile):
     """
     Creates and returns the properly formatted file names for the 4 outputted edf files
@@ -12,5 +13,3 @@ def file_naming(geneactivfile):
     device_file_name = "%s.edf" % (geneactivfile.file_name.replace("_GA_", "_GENEActiv_Device_")[:-4])
     return accelerometer_file_name, temperature_file_name, light_file_name, button_file_name, device_file_name
 
-
-def folder_naming(): x = 1

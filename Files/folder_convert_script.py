@@ -3,16 +3,13 @@
 
 
 # ======================================== IMPORTS ========================================
-import numpy as np
 import pandas as pd
-import csv
-import os
-import sys
 from ga_to_edf import *
+from Files.summary_metrics import *
 
 
 # ======================================== FUNCTION =========================================
-def folder_convert(input_dir, output_dir, device_edf = False, correct_drift=True, overwrite=False, quiet=False):
+def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, overwrite=False, quiet=False):
     """
     The folder_convert function takes a folder of GENEActiv files and converts them all to an edf file type following the predetermined folder structure
 
@@ -21,6 +18,8 @@ def folder_convert(input_dir, output_dir, device_edf = False, correct_drift=True
             Path to directory with all the binary GENEActive files
         output_dir: string
             Path to head directory where you want all the EDF files to go ([ONDO5]_[GENEActiv] in Folder structure example)
+        device_edf: Bool
+            Do you want the function to create a device wide EDF file that stores all 5 sensors in one EDF file
         correct_drift: Bool
             Should the function correct the clock drift on the incoming data?
         overwrite: Bool
@@ -83,6 +82,14 @@ def folder_convert(input_dir, output_dir, device_edf = False, correct_drift=True
     input_files = [f[:-4] for f in (os.listdir(input_dir)) if f.endswith('.bin')]
     if not quiet: print("input_files = ", input_files)
 
+    if device_edf:
+        device_dir = os.path.join(output_dir, "Device", "DATAFILES")
+        if not os.path.exists(device_dir):
+            if not quiet: print("Creating Proper Directories for Device Files...")
+            os.makedirs(device_dir)
+    else:
+        device_dir = ""
+
     # Converting Files
     if not overwrite:
         new_accelerometer_files = [f for f in input_files if f not in accelerometer_files_used]
@@ -95,7 +102,8 @@ def folder_convert(input_dir, output_dir, device_edf = False, correct_drift=True
         # Convert new input files to edf
         for x in new_files:
             if not quiet: print("Converting " + x + ".bin...")
-            ga_to_edf(input_dir + "\\" + x + ".bin", accelerometer_dir, temperature_dir, light_dir, button_dir, correct_drift=correct_drift, quiet=quiet)
+            ga_to_edf(input_dir + "\\" + x + ".bin", accelerometer_dir, temperature_dir, light_dir, button_dir, device_dir, device_edf,
+                      correct_drift=correct_drift, quiet=quiet)
 
     if overwrite:
         overwrite_accelerometer_files = [f for f in input_files if f in accelerometer_files_used]
@@ -105,32 +113,101 @@ def folder_convert(input_dir, output_dir, device_edf = False, correct_drift=True
         overwrite_files = np.unique(overwrite_accelerometer_files + overwrite_temperature_files + overwrite_light_files + overwrite_button_files)
         if not quiet: print("Files that will be overwritten: ", overwrite_files)
         for x in input_files:
-            ga_to_edf(input_dir + "\\" + x + ".bin", accelerometer_dir, temperature_dir, light_dir, button_dir, correct_drift=correct_drift, quiet=quiet)
-
-    if device_edf:
-        if not quiet: print("Converting device wide edf...")
-        device_dir = os.path.join(output_dir, "Device", "DATAFILES")
-        if not os.path.exists(device_dir):
-            if not quiet: print("Creating Proper Directories for Accelerometer Files...")
-            os.makedirs(device_dir)
-        for x in input_files:
-            device_ga_to_edf(input_dir+"\\"+ x + ".bin", device_dir, correct_drift=True, quiet=False)
+            ga_to_edf(input_dir + "\\" + x + ".bin", accelerometer_dir, temperature_dir, light_dir, button_dir, device_dir, device_edf,
+                      correct_drift=correct_drift, quiet=quiet)
 
     if not quiet: print("Conversion Complete")
 
-    # CSV File List
+    # Create Summary Metrics and File Lists
     dir_list = [accelerometer_dir, temperature_dir, light_dir, button_dir]
     if device_edf == True:
         dir_list.append(device_dir)
-    for x in dir_list:
-        csv_file_list(x, "OND05_FILELIST_GENEActiv.csv", quiet = quiet)
+        for x in dir_list:
+            csv_file_list(x, "OND05_FILELIST_GENEActiv.csv", quiet=quiet)
+            summary_metrics_folder_structure(x, "ONDO5_SummaryMetrics_GENEActiv.csv", quiet=quiet)
+
+
+def summary_metrics_folder_structure(path_to_DATAFILES, filename, quiet=False):
+    """
+    Uses the data pulled from the functions in the Files.summary_metrics file to create csv data in the approved format
+
+    Notes:
+        This will only work if the proper folder format is defined. i.e. must have a sensor name directory (ACCELEROMETER, ...) 1 level up from DATAFILES directories
+
+    
+    """
+    sensor = os.path.basename(os.path.dirname(path_to_DATAFILES))
+    file_list = [f for f in os.listdir(path_to_DATAFILES) if f.endswith('.edf')]
+    if sensor == 'Device':
+        device_list = []
+        for file in file_list:
+            device_list.append(device_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
+        device_column_names = ["SUBJECT_ID", "VISIT_NUMBER","SITE","SERIAL_NUMBER", "FILE_NAME", "START_DATETIME", "COLLECTION_DURATION",
+                               "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD", "ACC_Z_MEAN",
+                               "ACC_Z_SD", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD", "BUTTON_SAMPLE_RATE",
+                               "BUTTON_MEAN", "BUTTON_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
+        device_df = pd.DataFrame(device_list, columns=device_column_names)
+        full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+        device_df.to_csv(os.path.join(full_path,filename), mode="w")
+
+    if sensor == 'Accelerometer':
+        accelerometer_list = []
+        for file in file_list:
+            accelerometer_list.append(accelerometer_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
+        accelerometer_column_names = ["SUBJECT_ID", "VISIT_NUMBER","SITE","SERIAL_NUMBER", "FILE_NAME", "START_DATETIME", "COLLECTION_DURATION",
+                                      "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD", "ACC_Z_MEAN",
+                                      "ACC_Z_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
+        accelerometer_df = pd.DataFrame(accelerometer_list, columns=accelerometer_column_names)
+        full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
+        print(full_path)
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+        accelerometer_df.to_csv(os.path.join(full_path,filename), mode="w")
+
+    if sensor == 'Temperature':
+        temperature_list = []
+        for file in file_list:
+            temperature_list.append(temperature_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
+        temperature_column_names = ["SUBJECT_ID", "VISIT_NUMBER", "SITE","SERIAL_NUMBER", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
+                                    "DEVICE_LOCATION", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
+        temperature_df = pd.DataFrame(temperature_list, columns=temperature_column_names)
+        full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+        temperature_df.to_csv(os.path.join(full_path,filename), mode="w")
+
+    if sensor == 'Light':
+        light_list = []
+        for file in file_list:
+            light_list.append(light_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
+        light_column_names = ["SUBJECT_ID", "VISIT_NUMBER","SITE","SERIAL_NUMBER", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
+                              "DEVICE_LOCATION", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
+        light_df = pd.DataFrame(light_list, columns=light_column_names)
+        full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+        light_df.to_csv(os.path.join(full_path,filename), mode="w")
+
+    if sensor == 'Button':
+        button_list = []
+        for file in file_list:
+            button_list.append(button_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
+        button_column_names = ["SUBJECT_ID", "VISIT_NUMBER","SITE","SERIAL_NUMBER", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
+                               "DEVICE_LOCATION", "BUTTON_SAMPLE_RATE", "BUTTON_MEAN", "BUTTON_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
+        button_df = pd.DataFrame(button_list, columns=button_column_names)
+        full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
+        if not os.path.exists(full_path):
+            os.makedirs(full_path)
+        button_df.to_csv(os.path.join(full_path,filename), mode="w")
 
 
 def csv_file_list(dir_path, file_name, quiet=False):
+    # Given a path to a directory, creates a file list and names it the file_name argument
     if not quiet: print("Creating Filelist for", dir_path)
     dir_path = os.path.abspath(dir_path)
     file_list = [f for f in os.listdir(dir_path) if f.endswith('.edf')]
     file_df = pd.DataFrame(file_list)
     full_path = os.path.join(dir_path, file_name)
     file_df.to_csv(full_path, header=["File_names"], mode="w")
-

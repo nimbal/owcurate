@@ -1,6 +1,6 @@
 # Authors:  David Ding
 #           Kit Beyer
-
+#           Adam Vert
 
 # ======================================== IMPORTS ========================================
 import numpy as np
@@ -10,7 +10,6 @@ import shutil
 import fpdf
 import matplotlib.pyplot as plt
 import matplotlib.style as mstyle
-import matplotlib.dates as mdates
 
 mstyle.use('fast')
 
@@ -173,7 +172,7 @@ class GENEActivFile:
             "extract_time" : datetime.datetime.strptime(self.header["Extract Time"], "%Y-%m-%d %H:%M:%S:%f"),
             "extract_notes" : self.header["Extract Notes"],
             "clock_drift" : float(self.header["Extract Notes"].split(" ")[3][:-2].replace(",", "")),
-            "device_location" : self.header["Device Location Code"],
+            "device_location" : self.header["Device Location Code"].replace(" ", "_"),
             "subject_id" : self.header["Subject Code"],
             "date_of_birth" : self.header["Date of Birth"],
             "sex" : self.header["Sex"],
