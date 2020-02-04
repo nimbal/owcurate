@@ -7,7 +7,7 @@ import numpy as np
 from GENEActivFile import *
 import pyedflib
 import os
-
+import datetime
 
 # ======================================== FUNCTION =========================================
 def device_summary_metrics(path_to_edf, quiet=False):
@@ -17,9 +17,13 @@ def device_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("Creating Device Summary Metrics...")
     geneactivfile = pyedflib.EdfReader(path_to_edf)
 
-    # Subject ID
-    subjectID = geneactivfile.getPatientCode()
-    if not quiet: print("Subject ID: ", subjectID)
+    # Patient ID
+    patient_id = geneactivfile.getPatientCode()
+    if not quiet: print("Patient ID: ", patient_id)
+
+    # Extract Time (DATE)
+    extract_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S:%f")
+    if not quiet: print("Extraction Time: ", extract_time)
 
     # Serial Number
     serial_number = geneactivfile.getEquipment()
@@ -30,12 +34,16 @@ def device_summary_metrics(path_to_edf, quiet=False):
     file_name_split = file_name.split("_")
     if not quiet: print("File Name:", file_name)
 
+    # Subject
+    subject =file_name_split[0]+"_"+file_name_split[1]+"_"+file_name_split[2]
+    if not quiet: print("Subject: ", subject)
+
     # Start DateTime
     start_datetime = geneactivfile.getStartdatetime()
     if not quiet: print("start time: ", start_datetime)
 
     # Collection Duration (in days)
-    collection_duration = geneactivfile.getFileDuration() / 24 / 60 / 60
+    collection_duration = geneactivfile.getFileDuration() / 60 / 60
     if not quiet: print("Collection Duration: ", collection_duration)
 
     # Data Collection Site
@@ -103,17 +111,17 @@ def device_summary_metrics(path_to_edf, quiet=False):
 
     # Clock Drift
     clock_drift = float(geneactivfile.getRecordingAdditional())
-    clock_drift_rate = float(clock_drift / geneactivfile.file_duration)
+    clock_drift_rate = float(clock_drift / (geneactivfile.file_duration/24/60/60)) # Seconds Per Day
     if not quiet: print("clock drift (seconds): ", clock_drift)
     if not quiet: print("clock drift rate: ", clock_drift_rate)
     if not quiet: print("")
 
-    device_summary_metrics_list = [subjectID, patient_visit_number,data_collection_site, serial_number, file_name, start_datetime, collection_duration,
-                                   device_location, accelerometer_frequency, magnitude_accelerometer_mean, magnitude_accelerometer_std,
-                                   x_accelerometer_mean,
-                                   x_accelerometer_std, y_accelerometer_mean, y_accelerometer_std, z_accelerometer_mean, z_accelerometer_std,
-                                   temperature_frequency, temperature_mean, temperature_std, light_frequency, light_mean, light_std, button_frequency,
-                                   button_mean, button_std, clock_drift, clock_drift_rate]
+    device_summary_metrics_list = [subject, patient_visit_number,data_collection_site, extract_time,patient_id, serial_number, file_name, start_datetime, round(collection_duration,3),
+                                   device_location, accelerometer_frequency, round(magnitude_accelerometer_mean,3), round(magnitude_accelerometer_std,3),
+                                   round(x_accelerometer_mean,3),
+                                   round(x_accelerometer_std,3), round(y_accelerometer_mean,3), round(y_accelerometer_std,3), round(z_accelerometer_mean,3), round(z_accelerometer_std,3),
+                                   temperature_frequency, round(temperature_mean,3), round(temperature_std,3), light_frequency, round(light_mean,3), round(light_std,3), button_frequency,
+                                   round(button_mean,3), round(button_std,3), round(clock_drift,3), round(clock_drift_rate,3)]
 
     return device_summary_metrics_list
 
@@ -126,9 +134,13 @@ def accelerometer_summary_metrics(path_to_edf, quiet=False):
     print(path_to_edf)
     geneactivfile = pyedflib.EdfReader(path_to_edf)
 
-    # Subject ID
-    subjectID = geneactivfile.getPatientCode()
-    if not quiet: print("Subject ID: ", subjectID)
+    # Patient ID
+    patient_id = geneactivfile.getPatientCode()
+    if not quiet: print("Patient ID: ", patient_id)
+
+    # Extract Time (DATE)
+    extract_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S:%f")
+    if not quiet: print("Extraction Time: ", extract_time)
 
     # Serial Number
     serial_number = geneactivfile.getEquipment()
@@ -139,12 +151,16 @@ def accelerometer_summary_metrics(path_to_edf, quiet=False):
     file_name_split = file_name.split("_")
     if not quiet: print("File Name:", file_name)
 
+    # Subject
+    subject = file_name_split[0]+"_"+file_name_split[1]+"_"+file_name_split[2]
+    if not quiet: print("Subject: ", subject)
+
     # Start DateTime
     start_datetime = geneactivfile.getStartdatetime()
     if not quiet: print("start time: ", start_datetime)
 
     # Collection Duration (in days)
-    collection_duration = geneactivfile.getFileDuration() / 24 / 60 / 60
+    collection_duration = geneactivfile.getFileDuration() / 60 / 60
     if not quiet: print("Collection Duration: ", collection_duration)
 
     # Data Collection Site
@@ -189,16 +205,16 @@ def accelerometer_summary_metrics(path_to_edf, quiet=False):
 
     # Clock Drift
     clock_drift = float(geneactivfile.getRecordingAdditional())
-    clock_drift_rate = float(clock_drift / geneactivfile.file_duration)
+    clock_drift_rate = float(clock_drift / (geneactivfile.file_duration/24/60/60)) #Seconds Per Day
     if not quiet: print("clock drift (seconds): ", clock_drift)
     if not quiet: print("clock drift rate: ", clock_drift_rate)
     if not quiet: print("")
 
-    accelerometer_summary_metrics_list = [subjectID, patient_visit_number,data_collection_site, serial_number, file_name, start_datetime, collection_duration,
-                                          device_location, accelerometer_frequency, magnitude_accelerometer_mean,
-                                          magnitude_accelerometer_std, x_accelerometer_mean, x_accelerometer_std, y_accelerometer_mean,
-                                          y_accelerometer_std,
-                                          z_accelerometer_mean, z_accelerometer_std, clock_drift, clock_drift_rate]
+    accelerometer_summary_metrics_list = [subject, patient_visit_number,data_collection_site,extract_time, patient_id, serial_number, file_name, start_datetime, round(collection_duration,3),
+                                          device_location, accelerometer_frequency, round(magnitude_accelerometer_mean,3),
+                                          round(magnitude_accelerometer_std,3), round(x_accelerometer_mean,3), round(x_accelerometer_std,3), round(y_accelerometer_mean,3),
+                                          round(y_accelerometer_std,3),
+                                          round(z_accelerometer_mean,3), round(z_accelerometer_std,3), round(clock_drift,3), round(clock_drift_rate,3)]
 
     return accelerometer_summary_metrics_list
 
@@ -210,9 +226,13 @@ def temperature_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("Creating Temperature Summary Metrics...")
     geneactivfile = pyedflib.EdfReader(path_to_edf)
 
-    # Subject ID
-    subjectID = geneactivfile.getPatientCode()
-    if not quiet: print("Subject ID: ", subjectID)
+    # Patient ID
+    patient_id = geneactivfile.getPatientCode()
+    if not quiet: print("Patient ID: ", patient_id)
+
+    # Extract Time (DATE)
+    extract_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S:%f")
+    if not quiet: print("Extraction Time: ", extract_time)
 
     # Serial Number
     serial_number = geneactivfile.getEquipment()
@@ -223,12 +243,16 @@ def temperature_summary_metrics(path_to_edf, quiet=False):
     file_name_split = file_name.split("_")
     if not quiet: print("File Name:", file_name)
 
+    # Subject
+    subject =file_name_split[0]+"_"+file_name_split[1]+"_"+file_name_split[2]
+    if not quiet: print("Subject: ", subject)
+
     # Start DateTime
     start_datetime = geneactivfile.getStartdatetime()
     if not quiet: print("start time: ", start_datetime)
 
     # Collection Duration (in days)
-    collection_duration = geneactivfile.getFileDuration() / 24 / 60 / 60
+    collection_duration = geneactivfile.getFileDuration() / 60 / 60
     if not quiet: print("Collection Duration: ", collection_duration)
 
     # Data Collection Site
@@ -262,13 +286,12 @@ def temperature_summary_metrics(path_to_edf, quiet=False):
 
     # Clock Drift
     clock_drift = float(geneactivfile.getRecordingAdditional())
-    clock_drift_rate = float(clock_drift / geneactivfile.file_duration)
+    clock_drift_rate = float(clock_drift / (geneactivfile.file_duration/24/60/60)) # Seconds Per Day
     if not quiet: print("clock drift (seconds): ", clock_drift)
     if not quiet: print("clock drift rate: ", clock_drift_rate)
     if not quiet: print("")
 
-    temperature_summary_metrics_list = [subjectID, patient_visit_number, data_collection_site, serial_number, file_name, start_datetime, collection_duration, device_location, temperature_frequency, temperature_mean, temperature_std, clock_drift,
-                                        clock_drift_rate]
+    temperature_summary_metrics_list = [subject, patient_visit_number, data_collection_site,extract_time, patient_id, serial_number, file_name, start_datetime, round(collection_duration,3), device_location, temperature_frequency, round(temperature_mean,3), round(temperature_std,3), round(clock_drift,3), round(clock_drift_rate,3)]
 
     return temperature_summary_metrics_list
 
@@ -280,9 +303,13 @@ def light_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("Creating Light Summary Metrics...")
     geneactivfile = pyedflib.EdfReader(path_to_edf)
 
-    # Subject ID
-    subjectID = geneactivfile.getPatientCode()
-    if not quiet: print("Subject ID: ", subjectID)
+    # Patient ID
+    patient_id = geneactivfile.getPatientCode()
+    if not quiet: print("Patient ID: ", patient_id)
+
+    # Extract Time (DATE)
+    extract_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S:%f")
+    if not quiet: print("Extraction Time: ", extract_time)
 
     # Serial Number
     serial_number = geneactivfile.getEquipment()
@@ -293,12 +320,16 @@ def light_summary_metrics(path_to_edf, quiet=False):
     file_name_split = file_name.split("_")
     if not quiet: print("File Name:", file_name)
 
+    # Subject
+    subject =file_name_split[0]+"_"+file_name_split[1]+"_"+file_name_split[2]
+    if not quiet: print("Subject: ", subject)
+
     # Start DateTime
     start_datetime = geneactivfile.getStartdatetime()
     if not quiet: print("start time: ", start_datetime)
 
-    # Collection Duration (in days)
-    collection_duration = geneactivfile.getFileDuration() / 24 / 60 / 60
+    # Collection Duration (in hours)
+    collection_duration = geneactivfile.getFileDuration() / 60 / 60
     if not quiet: print("Collection Duration: ", collection_duration)
 
     # Data Collection Site
@@ -332,13 +363,13 @@ def light_summary_metrics(path_to_edf, quiet=False):
 
     # Clock Drift
     clock_drift = float(geneactivfile.getRecordingAdditional())
-    clock_drift_rate = float(clock_drift / geneactivfile.file_duration)
+    clock_drift_rate = float(clock_drift / (geneactivfile.file_duration/24/60/60)) # Seconds Per Day
     if not quiet: print("clock drift (seconds): ", clock_drift)
     if not quiet: print("clock drift rate: ", clock_drift_rate)
     if not quiet: print("")
 
-    light_summary_metrics_list = [subjectID, patient_visit_number, data_collection_site,serial_number, file_name, start_datetime, collection_duration, device_location,
-                                  light_frequency, light_mean, light_std, clock_drift, clock_drift_rate]
+    light_summary_metrics_list = [subject, patient_visit_number, data_collection_site, extract_time, patient_id,serial_number, file_name, start_datetime, round(collection_duration,3), device_location,
+                                  light_frequency, round(light_mean,3), round(light_std,3), round(clock_drift,3), round(clock_drift_rate,3)]
 
     return light_summary_metrics_list
 
@@ -350,9 +381,13 @@ def button_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("Creating Button Summary Metrics...")
     geneactivfile = pyedflib.EdfReader(path_to_edf)
 
-    # Subject ID
-    subjectID = geneactivfile.getPatientCode()
-    if not quiet: print("Subject ID: ", subjectID)
+    # Patient ID
+    patient_id = geneactivfile.getPatientCode()
+    if not quiet: print("Patient ID: ", patient_id)
+
+    # Extract Time (DATE)
+    extract_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S:%f")
+    if not quiet: print("Extraction Time: ", extract_time)
 
     # Serial Number
     serial_number = geneactivfile.getEquipment()
@@ -361,14 +396,18 @@ def button_summary_metrics(path_to_edf, quiet=False):
     # File Name
     file_name = os.path.basename(path_to_edf)
     file_name_split = file_name.split("_")
-    if not quiet: print("File Name:", file_name)
+    if not quiet: print("File Name: ", file_name)
+
+    # Subject
+    subject =file_name_split[0]+"_"+file_name_split[1]+"_"+file_name_split[2]
+    if not quiet: print("Subject: ", subject)
 
     # Start DateTime
     start_datetime = geneactivfile.getStartdatetime()
     if not quiet: print("start time: ", start_datetime)
 
     # Collection Duration (in days)
-    collection_duration = geneactivfile.getFileDuration() / 24 / 60 / 60
+    collection_duration = geneactivfile.getFileDuration()/ 60 / 60
     if not quiet: print("Collection Duration: ", collection_duration)
 
     # Data Collection Site
@@ -401,12 +440,12 @@ def button_summary_metrics(path_to_edf, quiet=False):
 
     # Clock Drift
     clock_drift = float(geneactivfile.getRecordingAdditional())
-    clock_drift_rate = float(clock_drift / geneactivfile.file_duration)
+    clock_drift_rate = float(clock_drift / (geneactivfile.file_duration/24/60/60)) # Seconds Per Day
     if not quiet: print("clock drift (seconds): ", clock_drift)
     if not quiet: print("clock drift rate: ", clock_drift_rate)
     if not quiet: print("")
 
-    button_summary_metrics_list = [subjectID, patient_visit_number, data_collection_site,serial_number, file_name, start_datetime, collection_duration,
-                                   device_location, button_frequency, button_mean, button_std, clock_drift, clock_drift_rate]
+    button_summary_metrics_list = [subject, patient_visit_number, data_collection_site,extract_time, patient_id, serial_number, file_name, start_datetime, round(collection_duration,3),
+                                   device_location, button_frequency, round(button_mean,3), round(button_std,3), round(clock_drift,3), round(clock_drift_rate,3)]
 
     return button_summary_metrics_list

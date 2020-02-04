@@ -73,7 +73,7 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         accelerometer_file.setHeader({"technician": "",
                                       "recording_additional": str(geneactivfile.file_info["clock_drift"]),  # Using this to hold the clock drift variable
                                       "patientname": geneactivfile.file_info["device_location"], # Using this to hold the body location variable
-                                      "patient_additional": "",
+                                      "patient_additional": str(geneactivfile.file_info["extract_time"]),
                                       "patientcode": "%r" % geneactivfile.file_info["subject_id"],
                                       "equipment": geneactivfile.file_info["serial_num"],
                                       "admincode": "",
@@ -112,7 +112,7 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         temperature_file.setHeader({"technician": "",
                                     "recording_additional": str(geneactivfile.file_info["clock_drift"]),  # Using this to hold the clock drift variable
                                     "patientname": geneactivfile.file_info["device_location"], # Using this to hold the body location variable
-                                    "patient_additional": "",
+                                    "patient_additional": str(geneactivfile.file_info["extract_time"]), #Using this to hold the extraction time variable, must be inputted as string. Must be changed to datetime when presented
                                     "patientcode": "%r" % geneactivfile.file_info["subject_id"],
                                     "equipment": geneactivfile.file_info["serial_num"],
                                     "admincode": "",
@@ -137,7 +137,7 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         light_file.setHeader({"technician": "",
                               "recording_additional": str(geneactivfile.file_info["clock_drift"]),  # Using this to hold the clock drift variable
                               "patientname": geneactivfile.file_info["device_location"], # Using this to hold the body location variable
-                              "patient_additional": "",
+                              "patient_additional": str(geneactivfile.file_info["extract_time"]),
                               "patientcode": "%r" % geneactivfile.file_info["subject_id"],
                               "equipment": geneactivfile.file_info["serial_num"],
                               "admincode": "",
@@ -154,7 +154,6 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
 
         light_file.writeSamples([np.array(geneactivfile.data["light"])])
         light_file.close()
-
     if button_dir != "":
         if not quiet: print("Building Button EDF...")
         button_full_path = os.path.join(button_dir, button_file_name)
@@ -162,7 +161,7 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         button_file.setHeader({"technician": "",
                                "recording_additional": str(geneactivfile.file_info["clock_drift"]),  # Using this to hold the clock drift variable
                                "patientname": geneactivfile.file_info["device_location"], # Using this to hold the body location variable
-                               "patient_additional": "",
+                               "patient_additional": str(geneactivfile.file_info["extract_time"]),
                                "patientcode": "%r" % geneactivfile.file_info["subject_id"],
                                "equipment": geneactivfile.file_info["serial_num"],
                                "admincode": "",
@@ -198,7 +197,7 @@ def device_ga_to_edf(geneactivfile, device_output_dir, quiet=False):
     device_file.setHeader({"technician": "",
                            "recording_additional": str(geneactivfile.file_info["clock_drift"]),  # Using this to hold the clock drift variable, for encoding reasons needs to be a string
                            "patientname": geneactivfile.file_info["device_location"], # Using this to hold the body location variable
-                           "patient_additional": "",
+                           "patient_additional": str(geneactivfile.file_info["extract_time"]),
                            "patientcode": "%r" % geneactivfile.file_info["subject_id"],
                            "equipment": geneactivfile.file_info["serial_num"],  # Body Location
                            "admincode": "",

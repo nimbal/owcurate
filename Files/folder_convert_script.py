@@ -6,7 +6,7 @@
 import pandas as pd
 from ga_to_edf import *
 from Files.summary_metrics import *
-
+import os
 
 # ======================================== FUNCTION =========================================
 def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, overwrite=False, quiet=False):
@@ -124,10 +124,10 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
         dir_list.append(device_dir)
         for x in dir_list:
             csv_file_list(x, "OND05_FILELIST_GENEActiv.csv", quiet=quiet)
-            summary_metrics_folder_structure(x, "ONDO5_SummaryMetrics_GENEActiv.csv", quiet=quiet)
+            summary_metrics_folder_structure(x, quiet=quiet)
 
 
-def summary_metrics_folder_structure(path_to_DATAFILES, filename, quiet=False):
+def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
     """
     Uses the data pulled from the functions in the Files.summary_metrics file to create csv data in the approved format
 
@@ -139,68 +139,77 @@ def summary_metrics_folder_structure(path_to_DATAFILES, filename, quiet=False):
     sensor = os.path.basename(os.path.dirname(path_to_DATAFILES))
     file_list = [f for f in os.listdir(path_to_DATAFILES) if f.endswith('.edf')]
     if sensor == 'Device':
+        filename = "OND05_" + sensor + "_SummaryMetrics.csv"
         device_list = []
         for file in file_list:
             device_list.append(device_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        device_column_names = ["SUBJECT_ID", "VISIT_NUMBER","SITE","SERIAL_NUMBER", "FILE_NAME", "START_DATETIME", "COLLECTION_DURATION",
-                               "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD", "ACC_Z_MEAN",
-                               "ACC_Z_SD", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD", "BUTTON_SAMPLE_RATE",
+        device_column_names = ["SUBJECT_ID", "VISIT", "SITE","DATE","PATIENT_ID", "DEVICE_ID", "FILE_NAME", "START_DATETIME", "COLLECTION_DURATION",
+                               "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD",
+                               "ACC_Z_MEAN",
+                               "ACC_Z_SD", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD",
+                               "BUTTON_SAMPLE_RATE",
                                "BUTTON_MEAN", "BUTTON_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
-        device_df = pd.DataFrame(device_list, columns=device_column_names)
+        device_df = pd.DataFrame(device_list, columns=device_column_names).round(3)
         full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
         if not os.path.exists(full_path):
             os.makedirs(full_path)
-        device_df.to_csv(os.path.join(full_path,filename), mode="w")
+        device_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
 
     if sensor == 'Accelerometer':
+        filename = "OND05_" + sensor + "_SummaryMetrics.csv"
         accelerometer_list = []
         for file in file_list:
             accelerometer_list.append(accelerometer_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        accelerometer_column_names = ["SUBJECT_ID", "VISIT_NUMBER","SITE","SERIAL_NUMBER", "FILE_NAME", "START_DATETIME", "COLLECTION_DURATION",
-                                      "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD", "ACC_Z_MEAN",
+        accelerometer_column_names = ["SUBJECT_ID", "VISIT", "SITE","DATE","PATIENT_ID", "DEVICE_ID", "FILE_NAME", "START_DATETIME", "COLLECTION_DURATION",
+                                      "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD",
+                                      "ACC_Z_MEAN",
                                       "ACC_Z_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
         accelerometer_df = pd.DataFrame(accelerometer_list, columns=accelerometer_column_names)
+
         full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
         print(full_path)
         if not os.path.exists(full_path):
             os.makedirs(full_path)
-        accelerometer_df.to_csv(os.path.join(full_path,filename), mode="w")
+        accelerometer_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
 
     if sensor == 'Temperature':
+        filename = "OND05_" + sensor + "_SummaryMetrics.csv"
         temperature_list = []
         for file in file_list:
             temperature_list.append(temperature_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        temperature_column_names = ["SUBJECT_ID", "VISIT_NUMBER", "SITE","SERIAL_NUMBER", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
+        temperature_column_names = ["SUBJECT_ID", "VISIT", "SITE","DATE","PATIENT_ID", "DEVICE_ID", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
                                     "DEVICE_LOCATION", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
-        temperature_df = pd.DataFrame(temperature_list, columns=temperature_column_names)
+        temperature_df = pd.DataFrame(temperature_list, columns=temperature_column_names).round(3)
         full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
         if not os.path.exists(full_path):
             os.makedirs(full_path)
-        temperature_df.to_csv(os.path.join(full_path,filename), mode="w")
+        temperature_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
 
     if sensor == 'Light':
+        filename = "OND05_" + sensor + "_SummaryMetrics.csv"
         light_list = []
         for file in file_list:
             light_list.append(light_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        light_column_names = ["SUBJECT_ID", "VISIT_NUMBER","SITE","SERIAL_NUMBER", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
+        light_column_names = ["SUBJECT_ID", "VISIT", "SITE","DATE","PATIENT_ID", "DEVICE_ID", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
                               "DEVICE_LOCATION", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
-        light_df = pd.DataFrame(light_list, columns=light_column_names)
+        light_df = pd.DataFrame(light_list, columns=light_column_names).round(3)
         full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
         if not os.path.exists(full_path):
             os.makedirs(full_path)
-        light_df.to_csv(os.path.join(full_path,filename), mode="w")
+        light_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
 
     if sensor == 'Button':
+        filename = "OND05_" + sensor + "_SummaryMetrics.csv"
         button_list = []
         for file in file_list:
             button_list.append(button_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        button_column_names = ["SUBJECT_ID", "VISIT_NUMBER","SITE","SERIAL_NUMBER", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
+        button_column_names = ["SUBJECT_ID", "VISIT", "SITE","DATE","PATIENT_ID", "DEVICE_ID", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
                                "DEVICE_LOCATION", "BUTTON_SAMPLE_RATE", "BUTTON_MEAN", "BUTTON_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
-        button_df = pd.DataFrame(button_list, columns=button_column_names)
+        button_df = pd.DataFrame(button_list, columns=button_column_names).round(3)
         full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
         if not os.path.exists(full_path):
             os.makedirs(full_path)
-        button_df.to_csv(os.path.join(full_path,filename), mode="w")
+        button_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
 
 
 def csv_file_list(dir_path, file_name, quiet=False):
