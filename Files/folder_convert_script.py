@@ -5,7 +5,7 @@
 # ======================================== IMPORTS ========================================
 import pandas as pd
 from ga_to_edf import *
-from Files.summary_metrics import *
+from summary_metrics import *
 import os
 
 # ======================================== FUNCTION =========================================
