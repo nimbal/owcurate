@@ -64,6 +64,17 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
     light_file_name = file_names[2]
     button_file_name = file_names[3]
 
+
+    # Create header values
+    clock_drift = geneactivfile.file_info["clock_drift"]
+    device_location = geneactivfile.file_info["device_location"]
+    extract_time = geneactivfile.file_info["extract_time"]
+    subject_id = geneactivfile.file_info["subject_id"]
+    serial_num = geneactivfile.file_info["serial_num"]
+    sex = geneactivfile.file_info["sex"]
+    start_time = geneactivfile.file_info["start_time"]
+    birthdate = datetime.datetime.strptime(geneactivfile.file_info["date_of_birth"], "%Y-%m-%d")
+
     # Outputting Accelerometer Information
     if not quiet: print("Starting EDF Conversion.")
     if accelerometer_dir != "":
@@ -71,15 +82,15 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         accelerometer_full_path = os.path.join(accelerometer_dir, accelerometer_file_name)
         accelerometer_file = pyedflib.EdfWriter(accelerometer_full_path, 3)
         accelerometer_file.setHeader({"technician": "",
-                                      "recording_additional": str(geneactivfile.file_info["clock_drift"]),  # Using this to hold the clock drift variable
-                                      "patientname": geneactivfile.file_info["device_location"], # Using this to hold the body location variable
-                                      "patient_additional": str(geneactivfile.file_info["extract_time"]),
-                                      "patientcode": "%r" % geneactivfile.file_info["subject_id"],
-                                      "equipment": geneactivfile.file_info["serial_num"],
+                                      "recording_additional": str(clock_drift),  # Using this to hold the clock drift variable, for encoding reasons needs to be a string
+                                      "patientname": device_location, # Using this to hold the body location variable
+                                      "patient_additional": str(extract_time), # Using this to hold the extract_time variable
+                                      "patientcode": subject_id,
+                                      "equipment": serial_num,
                                       "admincode": "",
-                                      "gender": geneactivfile.file_info["sex"],
-                                      "startdate": geneactivfile.file_info["start_time"],
-                                      "birthdate": datetime.datetime.strptime(geneactivfile.file_info["date_of_birth"], "%Y-%m-%d")})
+                                      "gender": sex,
+                                      "startdate": start_time,
+                                      "birthdate": birthdate})
 
         accelerometer_file.setSignalHeader(0, {"label": "x", "dimension": geneactivfile.file_info['accelerometer_units'],
                                                "sample_rate": geneactivfile.data['sample_rate'],
@@ -110,15 +121,15 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         temperature_full_path = os.path.join(temperature_dir, temperature_file_name)
         temperature_file = pyedflib.EdfWriter(temperature_full_path, 1)
         temperature_file.setHeader({"technician": "",
-                                    "recording_additional": str(geneactivfile.file_info["clock_drift"]),  # Using this to hold the clock drift variable
-                                    "patientname": geneactivfile.file_info["device_location"], # Using this to hold the body location variable
-                                    "patient_additional": str(geneactivfile.file_info["extract_time"]), #Using this to hold the extraction time variable, must be inputted as string. Must be changed to datetime when presented
-                                    "patientcode": "%r" % geneactivfile.file_info["subject_id"],
-                                    "equipment": geneactivfile.file_info["serial_num"],
-                                    "admincode": "",
-                                    "gender": geneactivfile.file_info["sex"],
-                                    "startdate": geneactivfile.file_info["start_time"],
-                                    "birthdate": datetime.datetime.strptime(geneactivfile.file_info["date_of_birth"], "%Y-%m-%d")})
+                                      "recording_additional": str(clock_drift),  # Using this to hold the clock drift variable, for encoding reasons needs to be a string
+                                      "patientname": device_location, # Using this to hold the body location variable
+                                      "patient_additional": str(extract_time), # Using this to hold the extract_time variable
+                                      "patientcode": subject_id,
+                                      "equipment": serial_num,
+                                      "admincode": "",
+                                      "gender": sex,
+                                      "startdate": start_time,
+                                      "birthdate": birthdate})
 
         temperature_file.setSignalHeader(0, {"label": "temperature", "dimension": geneactivfile.file_info['temperature_units'], "sample_rate": 1, #Actual sample rate = 0.25
                                              "physical_max": geneactivfile.file_info["temperature_physical_max"],
@@ -135,15 +146,15 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         light_full_path = os.path.join(light_dir, light_file_name)
         light_file = pyedflib.EdfWriter(light_full_path, 1)
         light_file.setHeader({"technician": "",
-                              "recording_additional": str(geneactivfile.file_info["clock_drift"]),  # Using this to hold the clock drift variable
-                              "patientname": geneactivfile.file_info["device_location"], # Using this to hold the body location variable
-                              "patient_additional": str(geneactivfile.file_info["extract_time"]),
-                              "patientcode": "%r" % geneactivfile.file_info["subject_id"],
-                              "equipment": geneactivfile.file_info["serial_num"],
-                              "admincode": "",
-                              "gender": geneactivfile.file_info["sex"],
-                              "startdate": geneactivfile.file_info["start_time"],
-                              "birthdate": datetime.datetime.strptime(geneactivfile.file_info["date_of_birth"], "%Y-%m-%d")})
+                                      "recording_additional": str(clock_drift),  # Using this to hold the clock drift variable, for encoding reasons needs to be a string
+                                      "patientname": device_location, # Using this to hold the body location variable
+                                      "patient_additional": str(extract_time), # Using this to hold the extract_time variable
+                                      "patientcode": subject_id,
+                                      "equipment": serial_num,
+                                      "admincode": "",
+                                      "gender": sex,
+                                      "startdate": start_time,
+                                      "birthdate": birthdate})
 
         light_file.setSignalHeader(0, {"label": "light", "dimension": geneactivfile.file_info['light_units'],
                                        "sample_rate": geneactivfile.data['sample_rate'],
@@ -159,16 +170,15 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         button_full_path = os.path.join(button_dir, button_file_name)
         button_file = pyedflib.EdfWriter(button_full_path, 1)
         button_file.setHeader({"technician": "",
-                               "recording_additional": str(geneactivfile.file_info["clock_drift"]),  # Using this to hold the clock drift variable
-                               "patientname": geneactivfile.file_info["device_location"], # Using this to hold the body location variable
-                               "patient_additional": str(geneactivfile.file_info["extract_time"]),
-                               "patientcode": "%r" % geneactivfile.file_info["subject_id"],
-                               "equipment": geneactivfile.file_info["serial_num"],
-                               "admincode": "",
-                               "gender": geneactivfile.file_info["sex"],
-                               "startdate": geneactivfile.file_info["start_time"],
-                               "birthdate": datetime.datetime.strptime(geneactivfile.file_info["date_of_birth"],
-                                                                       "%Y-%m-%d")})
+                                      "recording_additional": str(clock_drift),  # Using this to hold the clock drift variable, for encoding reasons needs to be a string
+                                      "patientname": device_location, # Using this to hold the body location variable
+                                      "patient_additional": str(extract_time), # Using this to hold the extract_time variable
+                                      "patientcode": subject_id,
+                                      "equipment": serial_num,
+                                      "admincode": "",
+                                      "gender": sex,
+                                      "startdate": start_time,
+                                      "birthdate": birthdate})
 
         button_file.setSignalHeader(0, {"label": "button ", "dimension": "", "sample_rate": geneactivfile.data['sample_rate'],
                                         "physical_max": 1,  # Must state physical min and max explicitly in the event that no button is pressed
@@ -190,20 +200,30 @@ def device_ga_to_edf(geneactivfile, device_output_dir, quiet=False):
     file_names = file_naming(geneactivfile)
     device_file_name = file_names[4]
 
+    # Create header values
+    clock_drift = geneactivfile.file_info["clock_drift"]
+    device_location = geneactivfile.file_info["device_location"]
+    extract_time = geneactivfile.file_info["extract_time"]
+    subject_id = geneactivfile.file_info["subject_id"]
+    serial_num = geneactivfile.file_info["serial_num"]
+    sex = geneactivfile.file_info["sex"]
+    start_time = geneactivfile.file_info["start_time"]
+    birthdate = datetime.datetime.strptime(geneactivfile.file_info["date_of_birth"], "%Y-%m-%d")
+
     if not quiet: print("Building Device EDF...")
     device_full_path = os.path.join(device_output_dir, device_file_name)
     device_file = pyedflib.EdfWriter(device_full_path, 6)
     device_file.setDatarecordDuration(400000)  # This allows the proper sample rate for temperature (0.25hz) by having a datarecord be 4 seconds, so all frequencyies are multiplied by 4
     device_file.setHeader({"technician": "",
-                           "recording_additional": str(geneactivfile.file_info["clock_drift"]),  # Using this to hold the clock drift variable, for encoding reasons needs to be a string
-                           "patientname": geneactivfile.file_info["device_location"], # Using this to hold the body location variable
-                           "patient_additional": str(geneactivfile.file_info["extract_time"]),
-                           "patientcode": "%r" % geneactivfile.file_info["subject_id"],
-                           "equipment": geneactivfile.file_info["serial_num"],  # Body Location
-                           "admincode": "",
-                           "gender": geneactivfile.file_info["sex"],
-                           "startdate": geneactivfile.file_info["start_time"],
-                           "birthdate": datetime.datetime.strptime(geneactivfile.file_info["date_of_birth"], "%Y-%m-%d")})
+                                      "recording_additional": str(clock_drift),  # Using this to hold the clock drift variable, for encoding reasons needs to be a string
+                                      "patientname": device_location, # Using this to hold the body location variable
+                                      "patient_additional": str(extract_time), # Using this to hold the extract_time variable
+                                      "patientcode": subject_id,
+                                      "equipment": serial_num,
+                                      "admincode": "",
+                                      "gender": sex,
+                                      "startdate": start_time,
+                                      "birthdate": birthdate})
 
 
     # Accelerometer Parameters
@@ -254,3 +274,88 @@ def device_ga_to_edf(geneactivfile, device_output_dir, quiet=False):
         [geneactivfile.data['x'], geneactivfile.data['y'], geneactivfile.data['z'], geneactivfile.data['temperature'], geneactivfile.data["light"], geneactivfile.data["button"]])
     device_file.close()
     if not quiet: print("Device Wide EDF Conversion Complete")
+
+
+def edf_integrity_check(edf_path, binary_path):
+    """
+    to verify that the data in the edf and bin files are the same
+    """
+
+    geneactivfile = GENEActivFile(binary_path)
+    geneactivfile.read()
+
+    # get EDF data
+    edf_data = pyedflib.EdfReader(edf_path)
+    clock_drift = edf_data.getRecordingAdditional()
+    body_location = edf_data.getPatientName()
+    extraction_time = edf_data.getPatientAdditional()
+    subject_id = edf_data.getPatientCode()
+    serial_num = edf_data.getEquipment()
+    start_date = edf_data.getStartdatetime()
+    print("Clock Drift: ", clock_drift)
+    print("Body Location: ", body_location)
+    print("Extraction Time: ", extraction_time)
+    print("Subject ID: ", subject_id)
+    print("Serial Number: ", serial_num)
+    print("Start Date: ", start_date)
+
+
+    print("")
+    print("")
+
+    # Get binary file data
+    bin_clock_drift = geneactivfile.file_info["clock_drift"]
+    bin_body_location = geneactivfile.file_info["device_location"]
+    bin_extraction_time = geneactivfile.file_info["extract_time"]
+    bin_subject_id = geneactivfile.file_info["subject_id"]
+    bin_serial_num = geneactivfile.file_info["serial_num"]
+    bin_start_date = geneactivfile.file_info["start_time"]
+    print("Bin Clock Drift: ", bin_clock_drift)
+    print("Bin Body Location: ", bin_body_location)
+    print("Bin Extraction Time: ", bin_extraction_time)
+    print("Bin Subject ID: ", bin_subject_id)
+    print("Bin Serial Number: ", bin_serial_num)
+    print("Bin Start Date: ", bin_start_date)
+
+    # Compare data
+    bad_match = 0
+    if str(clock_drift) != str(bin_clock_drift):
+        print("**WARNING, clock_drift VALUES DON'T MATCH")
+        print("EDF CLOCK DRIFT: ", clock_drift)
+        print("BIN CLOCK DRIFT: ", bin_clock_drift)
+        bad_match += 1
+
+    if str(body_location) != str(bin_body_location.replace("_", " ")):
+        print("**WARNING, body_location VALUES DON'T MATCH")
+        print("EDF BODY LOCATION: ", body_location)
+        print("BIN BODY LOCATION: ", bin_body_location)
+        bad_match += 1
+
+    if str(extraction_time) != str(bin_extraction_time):
+        print("**WARNING, extraction_time VALUES DON'T MATCH")
+        print("EDF EXTRACTION TIME: ", extraction_time)
+        print("BIN EXTRACTION TIME: ", bin_extraction_time)
+        bad_match += 1
+
+    if str(subject_id) != str(bin_subject_id):
+        print("**WARNING, subject_id VALUES DON'T MATCH")
+        print("EDF SUBJECT ID: ", subject_id)
+        print("BIN SUBJECT ID: ", bin_subject_id)
+        bad_match += 1
+
+    if str(serial_num) != str(bin_serial_num):
+        print("**WARNING, serial_num VALUES DON'T MATCH")
+        print("EDF SERIAL NUMBER: ", subject_id)
+        print("BIN SERIAL NUMBER: ", bin_subject_id)
+        bad_match += 1
+
+    if str(start_date + datetime.timedelta(0,0.5)) != str(bin_start_date):
+        print("**WARNING, start_date VALUES DON'T MATCH")
+        print("EDF START DATE: ", start_date)
+        print("BIN START DATE: ", bin_start_date)
+        bad_match += 1
+
+    if bad_match ==0: print("NO ERRORS")
+
+
+    print("Test Complete with ", bad_match, "bad matches.")
