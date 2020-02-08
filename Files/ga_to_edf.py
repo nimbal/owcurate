@@ -68,6 +68,8 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
     # Create header values
     clock_drift = geneactivfile.file_info["clock_drift"]
     device_location = geneactivfile.file_info["device_location"]
+    if device_location == '':  #  PyEDFlib can't recognize empty variables in header
+        device_location = "aid"  # Todo: discuss what an appropriate name would be for this
     extract_time = geneactivfile.file_info["extract_time"]
     subject_id = geneactivfile.file_info["subject_id"]
     serial_num = geneactivfile.file_info["serial_num"]

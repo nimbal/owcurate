@@ -15,14 +15,18 @@ def device_summary_metrics(path_to_edf, quiet=False):
     Extracts summary metrics from a device level .edf
     '''
     if not quiet: print("Creating Device Summary Metrics...")
+    if not quiet: print("path_to_edf: ", path_to_edf)
     geneactivfile = pyedflib.EdfReader(path_to_edf)
 
     # Patient ID
     patient_id = geneactivfile.getPatientCode()
     if not quiet: print("Patient ID: ", patient_id)
 
-    # Extract Time (DATE)
-    extract_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S:%f")
+    # Extract Time and Date
+    extract_date_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d_%H:%M:%S.%f")
+    extract_date = extract_date_time.strftime("%Y%m%d")
+    extract_time = extract_date_time.strftime("%H:%M:%S:%f")
+    if not quiet: print("Extraction Date: ", extract_date)
     if not quiet: print("Extraction Time: ", extract_time)
 
     # Serial Number
@@ -38,9 +42,12 @@ def device_summary_metrics(path_to_edf, quiet=False):
     subject =file_name_split[0]+"_"+file_name_split[1]+"_"+file_name_split[2]
     if not quiet: print("Subject: ", subject)
 
-    # Start DateTime
+    # Start Date and Time
     start_datetime = geneactivfile.getStartdatetime()
-    if not quiet: print("start time: ", start_datetime)
+    start_date = start_datetime.strftime("%Y%m%d")
+    start_time = start_datetime.strftime("%H:%M:%S:%f")
+    if not quiet: print("start date: ", start_date)
+    if not quiet: print("start time: ", start_time)
 
     # Collection Duration (in days)
     collection_duration = geneactivfile.getFileDuration() / 60 / 60
@@ -116,7 +123,7 @@ def device_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("clock drift rate: ", clock_drift_rate)
     if not quiet: print("")
 
-    device_summary_metrics_list = [subject, patient_visit_number,data_collection_site, extract_time,patient_id, serial_number, file_name, start_datetime, round(collection_duration,3),
+    device_summary_metrics_list = [subject, patient_visit_number,data_collection_site, extract_date, extract_time, serial_number, file_name, start_date, start_time, round(collection_duration,3),
                                    device_location, accelerometer_frequency, round(magnitude_accelerometer_mean,3), round(magnitude_accelerometer_std,3),
                                    round(x_accelerometer_mean,3),
                                    round(x_accelerometer_std,3), round(y_accelerometer_mean,3), round(y_accelerometer_std,3), round(z_accelerometer_mean,3), round(z_accelerometer_std,3),
@@ -131,15 +138,18 @@ def accelerometer_summary_metrics(path_to_edf, quiet=False):
     Extracts summary metrics from an accelerometer .edf
     '''
     if not quiet: print("Creating Accelerometer Summary Metrics...")
-    print(path_to_edf)
+    if not quiet: print("path_to_edf: ", path_to_edf)
     geneactivfile = pyedflib.EdfReader(path_to_edf)
 
     # Patient ID
     patient_id = geneactivfile.getPatientCode()
     if not quiet: print("Patient ID: ", patient_id)
 
-    # Extract Time (DATE)
-    extract_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S:%f")
+    # Extract Time and Date
+    extract_date_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f")
+    extract_date = extract_date_time.strftime("%Y%m%d")
+    extract_time = extract_date_time.strftime("%H:%M:%S:%f")
+    if not quiet: print("Extraction Date: ", extract_date)
     if not quiet: print("Extraction Time: ", extract_time)
 
     # Serial Number
@@ -155,9 +165,12 @@ def accelerometer_summary_metrics(path_to_edf, quiet=False):
     subject = file_name_split[0]+"_"+file_name_split[1]+"_"+file_name_split[2]
     if not quiet: print("Subject: ", subject)
 
-    # Start DateTime
+    # Start Date and Time
     start_datetime = geneactivfile.getStartdatetime()
-    if not quiet: print("start time: ", start_datetime)
+    start_date = start_datetime.strftime("%Y%m%d")
+    start_time = start_datetime.strftime("%H:%M:%S:%f")
+    if not quiet: print("start date: ", start_date)
+    if not quiet: print("start time: ", start_time)
 
     # Collection Duration (in days)
     collection_duration = geneactivfile.getFileDuration() / 60 / 60
@@ -210,7 +223,7 @@ def accelerometer_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("clock drift rate: ", clock_drift_rate)
     if not quiet: print("")
 
-    accelerometer_summary_metrics_list = [subject, patient_visit_number,data_collection_site,extract_time, patient_id, serial_number, file_name, start_datetime, round(collection_duration,3),
+    accelerometer_summary_metrics_list = [subject, patient_visit_number,data_collection_site,extract_date, extract_time,  serial_number, file_name, start_date, start_time, round(collection_duration,3),
                                           device_location, accelerometer_frequency, round(magnitude_accelerometer_mean,3),
                                           round(magnitude_accelerometer_std,3), round(x_accelerometer_mean,3), round(x_accelerometer_std,3), round(y_accelerometer_mean,3),
                                           round(y_accelerometer_std,3),
@@ -224,14 +237,18 @@ def temperature_summary_metrics(path_to_edf, quiet=False):
     Extracts summary metrics from a temperature .edf
     '''
     if not quiet: print("Creating Temperature Summary Metrics...")
+    if not quiet: print("path_to_edf: ", path_to_edf)
     geneactivfile = pyedflib.EdfReader(path_to_edf)
 
     # Patient ID
     patient_id = geneactivfile.getPatientCode()
     if not quiet: print("Patient ID: ", patient_id)
 
-    # Extract Time (DATE)
-    extract_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S:%f")
+    # Extract Time and Date
+    extract_date_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f")
+    extract_date = extract_date_time.strftime("%Y%m%d")
+    extract_time = extract_date_time.strftime("%H:%M:%S:%f")
+    if not quiet: print("Extraction Date: ", extract_date)
     if not quiet: print("Extraction Time: ", extract_time)
 
     # Serial Number
@@ -247,9 +264,12 @@ def temperature_summary_metrics(path_to_edf, quiet=False):
     subject =file_name_split[0]+"_"+file_name_split[1]+"_"+file_name_split[2]
     if not quiet: print("Subject: ", subject)
 
-    # Start DateTime
+    # Start Date and Time
     start_datetime = geneactivfile.getStartdatetime()
-    if not quiet: print("start time: ", start_datetime)
+    start_date = start_datetime.strftime("%Y%m%d")
+    start_time = start_datetime.strftime("%H:%M:%S:%f")
+    if not quiet: print("start date: ", start_date)
+    if not quiet: print("start time: ", start_time)
 
     # Collection Duration (in days)
     collection_duration = geneactivfile.getFileDuration() / 60 / 60
@@ -291,7 +311,7 @@ def temperature_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("clock drift rate: ", clock_drift_rate)
     if not quiet: print("")
 
-    temperature_summary_metrics_list = [subject, patient_visit_number, data_collection_site,extract_time, patient_id, serial_number, file_name, start_datetime, round(collection_duration,3), device_location, temperature_frequency, round(temperature_mean,3), round(temperature_std,3), round(clock_drift,3), round(clock_drift_rate,3)]
+    temperature_summary_metrics_list = [subject, patient_visit_number, data_collection_site,extract_date, extract_time,  serial_number, file_name, start_date, start_time, round(collection_duration,3), device_location, temperature_frequency, round(temperature_mean,3), round(temperature_std,3), round(clock_drift,3), round(clock_drift_rate,3)]
 
     return temperature_summary_metrics_list
 
@@ -301,14 +321,18 @@ def light_summary_metrics(path_to_edf, quiet=False):
     Extracts summary metrics from a light .edf
     '''
     if not quiet: print("Creating Light Summary Metrics...")
+    if not quiet: print("path_to_edf: ", path_to_edf)
     geneactivfile = pyedflib.EdfReader(path_to_edf)
 
     # Patient ID
     patient_id = geneactivfile.getPatientCode()
     if not quiet: print("Patient ID: ", patient_id)
 
-    # Extract Time (DATE)
-    extract_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S:%f")
+    # Extract Time and Date
+    extract_date_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f")
+    extract_date = extract_date_time.strftime("%Y%m%d")
+    extract_time = extract_date_time.strftime("%H:%M:%S:%f")
+    if not quiet: print("Extraction Date: ", extract_date)
     if not quiet: print("Extraction Time: ", extract_time)
 
     # Serial Number
@@ -324,9 +348,12 @@ def light_summary_metrics(path_to_edf, quiet=False):
     subject =file_name_split[0]+"_"+file_name_split[1]+"_"+file_name_split[2]
     if not quiet: print("Subject: ", subject)
 
-    # Start DateTime
+    # Start Date and Time
     start_datetime = geneactivfile.getStartdatetime()
-    if not quiet: print("start time: ", start_datetime)
+    start_date = start_datetime.strftime("%Y%m%d")
+    start_time = start_datetime.strftime("%H:%M:%S:%f")
+    if not quiet: print("start date: ", start_date)
+    if not quiet: print("start time: ", start_time)
 
     # Collection Duration (in hours)
     collection_duration = geneactivfile.getFileDuration() / 60 / 60
@@ -368,7 +395,7 @@ def light_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("clock drift rate: ", clock_drift_rate)
     if not quiet: print("")
 
-    light_summary_metrics_list = [subject, patient_visit_number, data_collection_site, extract_time, patient_id,serial_number, file_name, start_datetime, round(collection_duration,3), device_location,
+    light_summary_metrics_list = [subject, patient_visit_number, data_collection_site, extract_date, extract_time, serial_number, file_name, start_date, start_time, round(collection_duration,3), device_location,
                                   light_frequency, round(light_mean,3), round(light_std,3), round(clock_drift,3), round(clock_drift_rate,3)]
 
     return light_summary_metrics_list
@@ -379,14 +406,18 @@ def button_summary_metrics(path_to_edf, quiet=False):
     Extracts summary metrics from a button .edf
     '''
     if not quiet: print("Creating Button Summary Metrics...")
+    if not quiet: print("path_to_edf: ", path_to_edf)
     geneactivfile = pyedflib.EdfReader(path_to_edf)
 
     # Patient ID
     patient_id = geneactivfile.getPatientCode()
     if not quiet: print("Patient ID: ", patient_id)
 
-    # Extract Time (DATE)
-    extract_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f").strftime("%Y-%m-%d %H:%M:%S:%f")
+    # Extract Time and Date
+    extract_date_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f")
+    extract_date = extract_date_time.strftime("%Y%m%d")
+    extract_time = extract_date_time.strftime("%H:%M:%S:%f")
+    if not quiet: print("Extraction Date: ", extract_date)
     if not quiet: print("Extraction Time: ", extract_time)
 
     # Serial Number
@@ -402,9 +433,12 @@ def button_summary_metrics(path_to_edf, quiet=False):
     subject =file_name_split[0]+"_"+file_name_split[1]+"_"+file_name_split[2]
     if not quiet: print("Subject: ", subject)
 
-    # Start DateTime
+    # Start Date and Time
     start_datetime = geneactivfile.getStartdatetime()
-    if not quiet: print("start time: ", start_datetime)
+    start_date = start_datetime.strftime("%Y%m%d")
+    start_time = start_datetime.strftime("%H:%M:%S:%f")
+    if not quiet: print("start date: ", start_date)
+    if not quiet: print("start time: ", start_time)
 
     # Collection Duration (in days)
     collection_duration = geneactivfile.getFileDuration()/ 60 / 60
@@ -420,7 +454,7 @@ def button_summary_metrics(path_to_edf, quiet=False):
 
     # Device Location
     device_location = geneactivfile.getPatientName()
-    print("device location:", device_location)
+    if not quiet: print("device location:", device_location)
 
     # Frequency
     button_frequency = geneactivfile.samplefrequency(0)
@@ -445,7 +479,7 @@ def button_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("clock drift rate: ", clock_drift_rate)
     if not quiet: print("")
 
-    button_summary_metrics_list = [subject, patient_visit_number, data_collection_site,extract_time, patient_id, serial_number, file_name, start_datetime, round(collection_duration,3),
+    button_summary_metrics_list = [subject, patient_visit_number, data_collection_site,extract_date, extract_time,serial_number, file_name, start_date, start_time, round(collection_duration,3),
                                    device_location, button_frequency, round(button_mean,3), round(button_std,3), round(clock_drift,3), round(clock_drift_rate,3)]
 
     return button_summary_metrics_list

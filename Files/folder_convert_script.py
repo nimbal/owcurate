@@ -39,8 +39,8 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
     # Creating list of accelerometer files already converted
     accelerometer_dir = os.path.join(output_dir, "Accelerometer", "DATAFILES")
     if os.path.exists(accelerometer_dir):
-        accelerometer_edf_files = [f for f in os.listdir(accelerometer_dir) if f.endswith('.EDF')]
-        accelerometer_files_used = [f[:-10].replace("_GENEActiv_", "_GA_") for f in accelerometer_edf_files]
+        accelerometer_edf_files = [f for f in os.listdir(accelerometer_dir) if f.endswith('.edf')]
+        accelerometer_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Accelerometer_","_") for f in accelerometer_edf_files]
     else:
         if not quiet: print("Creating Proper Directories for Accelerometer Files...")
         os.makedirs(accelerometer_dir)
@@ -49,8 +49,8 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
     # Creating list of Temperature files already converted
     temperature_dir = os.path.join(output_dir, "Temperature", "DATAFILES")
     if os.path.exists(temperature_dir):
-        temperature_edf_files = [f for f in os.listdir(temperature_dir) if f.endswith('.EDF')]
-        temperature_files_used = [f[:-9].replace("_GENEActiv_", "_GA_") for f in temperature_edf_files]
+        temperature_edf_files = [f for f in os.listdir(temperature_dir) if f.endswith('.edf')]
+        temperature_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Temperature_","_") for f in temperature_edf_files]
     else:
         if not quiet: print("Creating Proper Directories for Temperature Files...")
         os.makedirs(temperature_dir)
@@ -59,8 +59,8 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
     # Creating list of Light files already converted
     light_dir = os.path.join(output_dir, "Light", "DATAFILES")
     if os.path.exists(light_dir):
-        light_edf_files = [f for f in os.listdir(light_dir) if f.endswith('.EDF')]
-        light_files_used = [f[:-10].replace("_GENEActiv_", "_GA_") for f in light_edf_files]
+        light_edf_files = [f for f in os.listdir(light_dir) if f.endswith('.edf')]
+        light_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Light_","_") for f in light_edf_files]
     else:
         if not quiet: print("Creating Proper Directories for Light Files...")
         os.makedirs(light_dir)
@@ -69,16 +69,15 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
     # Creating list of Button files already converted
     button_dir = os.path.join(output_dir, "Button", "DATAFILES")
     if os.path.exists(button_dir):
-        button_edf_files = [f for f in os.listdir(button_dir) if f.endswith('.EDF')]
-        button_files_used = [f[:-11].replace("_GENEActiv_", "_GA_") for f in button_edf_files]
+        button_edf_files = [f for f in os.listdir(button_dir) if f.endswith('.edf')]
+        button_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Button_","_") for f in button_edf_files]
     else:
         if not quiet: print("Creating Proper Directories for Button Files...")
         os.makedirs(button_dir)
         button_files_used = []
-
     # Creating input files list
     input_dir = os.path.abspath(input_dir)
-    if not quiet: print(input_dir)
+    if not quiet: print("input dir:",input_dir)
     input_files = [f[:-4] for f in (os.listdir(input_dir)) if f.endswith('.bin')]
     if not quiet: print("input_files = ", input_files)
 
@@ -122,9 +121,9 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
     dir_list = [accelerometer_dir, temperature_dir, light_dir, button_dir]
     if device_edf == True:
         dir_list.append(device_dir)
-        for x in dir_list:
-            csv_file_list(x, "OND05_FILELIST_GENEActiv.csv", quiet=quiet)
-            summary_metrics_folder_structure(x, quiet=quiet)
+    for x in dir_list:
+        csv_file_list(x, "OND05_FILELIST_GENEActiv.csv", quiet=quiet)
+        summary_metrics_folder_structure(x, quiet=quiet)
 
 
 def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
@@ -143,7 +142,7 @@ def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
         device_list = []
         for file in file_list:
             device_list.append(device_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        device_column_names = ["SUBJECT_ID", "VISIT", "SITE","DATE","PATIENT_ID", "DEVICE_ID", "FILE_NAME", "START_DATETIME", "COLLECTION_DURATION",
+        device_column_names = ["SUBJECT", "VISIT", "SITE","DATE", "DEVICE_ID", "FILE_NAME", "START_DATETIME", "COLLECTION_DURATION",
                                "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD",
                                "ACC_Z_MEAN",
                                "ACC_Z_SD", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD",
@@ -160,14 +159,13 @@ def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
         accelerometer_list = []
         for file in file_list:
             accelerometer_list.append(accelerometer_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        accelerometer_column_names = ["SUBJECT_ID", "VISIT", "SITE","DATE","PATIENT_ID", "DEVICE_ID", "FILE_NAME", "START_DATETIME", "COLLECTION_DURATION",
+        accelerometer_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
                                       "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD",
                                       "ACC_Z_MEAN",
                                       "ACC_Z_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
         accelerometer_df = pd.DataFrame(accelerometer_list, columns=accelerometer_column_names)
 
         full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
-        print(full_path)
         if not os.path.exists(full_path):
             os.makedirs(full_path)
         accelerometer_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
@@ -177,7 +175,7 @@ def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
         temperature_list = []
         for file in file_list:
             temperature_list.append(temperature_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        temperature_column_names = ["SUBJECT_ID", "VISIT", "SITE","DATE","PATIENT_ID", "DEVICE_ID", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
+        temperature_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
                                     "DEVICE_LOCATION", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
         temperature_df = pd.DataFrame(temperature_list, columns=temperature_column_names).round(3)
         full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
@@ -190,7 +188,7 @@ def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
         light_list = []
         for file in file_list:
             light_list.append(light_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        light_column_names = ["SUBJECT_ID", "VISIT", "SITE","DATE","PATIENT_ID", "DEVICE_ID", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
+        light_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
                               "DEVICE_LOCATION", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
         light_df = pd.DataFrame(light_list, columns=light_column_names).round(3)
         full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
@@ -203,7 +201,7 @@ def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
         button_list = []
         for file in file_list:
             button_list.append(button_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        button_column_names = ["SUBJECT_ID", "VISIT", "SITE","DATE","PATIENT_ID", "DEVICE_ID", "FILE_NAME", "START_DATE_TIME", "COLLECTION_DURATION",
+        button_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
                                "DEVICE_LOCATION", "BUTTON_SAMPLE_RATE", "BUTTON_MEAN", "BUTTON_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
         button_df = pd.DataFrame(button_list, columns=button_column_names).round(3)
         full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
