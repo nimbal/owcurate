@@ -10,6 +10,7 @@ import shutil
 import fpdf
 import matplotlib.pyplot as plt
 import matplotlib.style as mstyle
+import time
 
 mstyle.use('fast')
 
@@ -115,7 +116,7 @@ class GENEActivFile:
         Returns:
 
         '''
-
+        read_start_time = time.time()
         # if file does not exist then exit
         if not os.path.exists(self.file_path):
 
@@ -123,11 +124,11 @@ class GENEActivFile:
             return
 
         # Read GENEActiv .bin file
+
         if not quiet: print("Reading %s ..." % self.file_path)
         bin_file = open(self.file_path, "r", encoding="utf-8")
         lines = [line[:-1] for line in bin_file.readlines()]
         bin_file.close()
-
         # Calculate number of lines in header
         header_end = lines[:150].index("Recorded Data")
 
@@ -238,7 +239,7 @@ class GENEActivFile:
             self.parse_data(start = start, end = end, downsample = downsample, calibrate = calibrate,
                             correct_drift = correct_drift, update = update, quiet = quiet)
 
-        if not quiet: print("Done reading file.")
+        if not quiet: print("Done reading file. Time to read file: ", time.time()-read_start_time)
 
 
     def parse_data(self, start = 1, end = -1, downsample = 1, calibrate = True,
@@ -427,7 +428,8 @@ class GENEActivFile:
                     # insert data into each signal
                     data[key] = np.insert(data[key],
                                           [round(adjust_rate * (i + 1)) for i in
-                                           range(int(len(data[key]) / adjust_rate))], 0)
+                                           range(int(len(data[key]) / adjust_rate))], 0) # Todo: decide on what value to assign to the clock drift values
+
 
 
                     # insert data into start of each signal to account for time from config to start

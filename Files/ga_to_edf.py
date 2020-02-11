@@ -7,8 +7,8 @@ from GENEActivFile import *
 from file_naming import file_naming
 import pyedflib
 import datetime
-import os
-
+import os, sys
+import time
 
 # ======================================== FUNCTIONS ========================================
 def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, button_dir, device_dir = "", device_edf = False, correct_drift=True, quiet=False):
@@ -80,6 +80,7 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
     # Outputting Accelerometer Information
     if not quiet: print("Starting EDF Conversion.")
     if accelerometer_dir != "":
+        edf_start_time = time.time()
         if not quiet: print("Building Accelerometer EDF...")
         accelerometer_full_path = os.path.join(accelerometer_dir, accelerometer_file_name)
         accelerometer_file = pyedflib.EdfWriter(accelerometer_full_path, 3)
@@ -117,8 +118,10 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
 
         accelerometer_file.writeSamples([geneactivfile.data['x'], geneactivfile.data['y'], geneactivfile.data['z']])
         accelerometer_file.close()
+        if not quiet: print("Seconds to make Accelerometer EDF:", time.time() - edf_start_time)
 
     if temperature_dir != "":
+        edf_start_time = time.time()
         if not quiet: print("Building Temperature EDF...")
         temperature_full_path = os.path.join(temperature_dir, temperature_file_name)
         temperature_file = pyedflib.EdfWriter(temperature_full_path, 1)
@@ -142,8 +145,10 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         temperature_file.setDatarecordDuration(400000) #This makes the time per data record from 1 second to 4 making the sample rate 0.25
         temperature_file.writeSamples([np.array(geneactivfile.data['temperature'])])
         temperature_file.close()
+        if not quiet: print("Seconds to make Temperature EDF:", time.time() - edf_start_time)
 
     if light_dir != "":
+        edf_start_time = time.time()
         if not quiet: print("Building Light EDF...")
         light_full_path = os.path.join(light_dir, light_file_name)
         light_file = pyedflib.EdfWriter(light_full_path, 1)
@@ -167,7 +172,9 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
 
         light_file.writeSamples([np.array(geneactivfile.data["light"])])
         light_file.close()
+        if not quiet: print("Seconds to make Light EDF:", time.time() - edf_start_time)
     if button_dir != "":
+        edf_start_time = time.time()
         if not quiet: print("Building Button EDF...")
         button_full_path = os.path.join(button_dir, button_file_name)
         button_file = pyedflib.EdfWriter(button_full_path, 1)
@@ -190,6 +197,7 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
 
         button_file.writeSamples([np.array(geneactivfile.data["button"])])
         button_file.close()
+        if not quiet: print("Seconds to make Button EDF:", time.time() - edf_start_time)
     if device_edf: device_ga_to_edf(geneactivfile, device_dir, quiet)
 
     if not quiet: print("EDF Conversion Complete.")
@@ -213,6 +221,7 @@ def device_ga_to_edf(geneactivfile, device_output_dir, quiet=False):
     birthdate = datetime.datetime.strptime(geneactivfile.file_info["date_of_birth"], "%Y-%m-%d")
 
     if not quiet: print("Building Device EDF...")
+    edf_start_time = time.time()
     device_full_path = os.path.join(device_output_dir, device_file_name)
     device_file = pyedflib.EdfWriter(device_full_path, 6)
     device_file.setDatarecordDuration(400000)  # This allows the proper sample rate for temperature (0.25hz) by having a datarecord be 4 seconds, so all frequencyies are multiplied by 4
@@ -275,7 +284,7 @@ def device_ga_to_edf(geneactivfile, device_output_dir, quiet=False):
     device_file.writeSamples(
         [geneactivfile.data['x'], geneactivfile.data['y'], geneactivfile.data['z'], geneactivfile.data['temperature'], geneactivfile.data["light"], geneactivfile.data["button"]])
     device_file.close()
-    if not quiet: print("Device Wide EDF Conversion Complete")
+    if not quiet: print("Seconds to make Device EDF:", time.time() - edf_start_time)
 
 
 def edf_integrity_check(edf_path, binary_path):

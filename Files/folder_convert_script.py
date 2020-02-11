@@ -7,6 +7,8 @@ import pandas as pd
 from ga_to_edf import *
 from summary_metrics import *
 import os
+import pyedflib
+import datetime
 
 # ======================================== FUNCTION =========================================
 def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, overwrite=False, quiet=False):
@@ -142,17 +144,15 @@ def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
         device_list = []
         for file in file_list:
             device_list.append(device_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        device_column_names = ["SUBJECT", "VISIT", "SITE","DATE", "DEVICE_ID", "FILE_NAME", "START_DATETIME", "COLLECTION_DURATION",
+        device_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
                                "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD",
                                "ACC_Z_MEAN",
                                "ACC_Z_SD", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD",
                                "BUTTON_SAMPLE_RATE",
                                "BUTTON_MEAN", "BUTTON_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
         device_df = pd.DataFrame(device_list, columns=device_column_names).round(3)
-        full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
-        device_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
+        full_path = os.path.join(os.path.dirname(path_to_DATAFILES),filename)
+        device_df.to_csv(full_path, mode="w", index=False)
 
     if sensor == 'Accelerometer':
         filename = "OND05_" + sensor + "_SummaryMetrics.csv"
@@ -165,10 +165,8 @@ def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
                                       "ACC_Z_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
         accelerometer_df = pd.DataFrame(accelerometer_list, columns=accelerometer_column_names)
 
-        full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
-        accelerometer_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
+        full_path = os.path.join(os.path.dirname(path_to_DATAFILES),filename)
+        accelerometer_df.to_csv(full_path, mode="w", index=False)
 
     if sensor == 'Temperature':
         filename = "OND05_" + sensor + "_SummaryMetrics.csv"
@@ -178,10 +176,8 @@ def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
         temperature_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
                                     "DEVICE_LOCATION", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
         temperature_df = pd.DataFrame(temperature_list, columns=temperature_column_names).round(3)
-        full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
-        temperature_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
+        full_path = os.path.join(os.path.dirname(path_to_DATAFILES),filename)
+        temperature_df.to_csv(full_path, mode="w", index=False)
 
     if sensor == 'Light':
         filename = "OND05_" + sensor + "_SummaryMetrics.csv"
@@ -191,10 +187,8 @@ def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
         light_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
                               "DEVICE_LOCATION", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
         light_df = pd.DataFrame(light_list, columns=light_column_names).round(3)
-        full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
-        light_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
+        full_path = os.path.join(os.path.dirname(path_to_DATAFILES),filename)
+        light_df.to_csv(full_path, mode="w", index=False)
 
     if sensor == 'Button':
         filename = "OND05_" + sensor + "_SummaryMetrics.csv"
@@ -204,10 +198,8 @@ def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
         button_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
                                "DEVICE_LOCATION", "BUTTON_SAMPLE_RATE", "BUTTON_MEAN", "BUTTON_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
         button_df = pd.DataFrame(button_list, columns=button_column_names).round(3)
-        full_path = os.path.join(os.path.dirname(path_to_DATAFILES), "OND05_Summary_Metrics")
-        if not os.path.exists(full_path):
-            os.makedirs(full_path)
-        button_df.to_csv(os.path.join(full_path, filename), mode="w", index=False)
+        full_path = os.path.join(os.path.dirname(path_to_DATAFILES),filename)
+        button_df.to_csv(full_path, mode="w", index=False)
 
 
 def csv_file_list(dir_path, file_name, quiet=False):
@@ -215,6 +207,44 @@ def csv_file_list(dir_path, file_name, quiet=False):
     if not quiet: print("Creating Filelist for", dir_path)
     dir_path = os.path.abspath(dir_path)
     file_list = [f for f in os.listdir(dir_path) if f.endswith('.edf')]
-    file_df = pd.DataFrame(file_list)
+
+    #Create lists for each column of dataframe
+    subjects = []
+    visits = []
+    dates = []
+    sizes = []
+
+    for file in file_list:
+        #Read EDF
+        path_to_file = os.path.join(dir_path, file)
+        geneactivfile = pyedflib.EdfReader(path_to_file)
+
+        # File Name
+        file_split = file.split("_")
+
+        # Subject
+        subject = file_split[0] + "_" + file_split[1] + "_" + file_split[2]
+        subjects.append(subject)
+
+        # Patient Visit Number
+        patient_visit_number = file_split[3]
+        visits.append(patient_visit_number)
+
+        # Date TODO: What date to use, extraction? Start? Using extraction date for now
+        extract_date_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f")
+        extract_date = extract_date_time.strftime("%Y%b%d").upper()
+        dates.append(extract_date)
+
+        #Size (in bytes)
+        size_bytes = os.path.getsize(path_to_file)
+        sizes.append(size_bytes)
+
+    file_list_df = pd.DataFrame(
+        {'SUBJECT': subjects,
+         'VISIT': visits,
+         'DATE': dates,
+         'SIZE': sizes,
+         'FILENAME': file_list
+         })
     full_path = os.path.join(dir_path, file_name)
-    file_df.to_csv(full_path, header=["File_names"], mode="w")
+    file_list_df.to_csv(full_path, mode="w", index = False)
