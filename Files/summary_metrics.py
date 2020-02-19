@@ -8,9 +8,123 @@ from GENEActivFile import *
 import pyedflib
 import os
 import datetime
+import isodate
 
 
 # ======================================== FUNCTION =========================================
+def summary_metrics(path_to_head_dir, file, accelerometer_exists = True, temperature_exists = True, light_exists = True, button_exists = True, quiet =False):
+
+    """
+    Feb 2020
+    Adam Vert
+
+    Function creates a metadata file for level 1 parameters
+    """
+    if not quiet: print("Creating Summary Metrics...")
+
+    # Read EDF
+    if accelerometer_exists:
+        accelerometer_path = os.path.join(path_to_head_dir, "Accelerometer", "DATAFILES", file.replace("GENEActiv_", "GENEActiv_Accelerometer_"))
+        print(accelerometer_path)
+        accelerometer_geneactivfile = pyedflib.EdfReader(accelerometer_path)
+        geneactivfile = accelerometer_geneactivfile
+    if temperature_exists:
+        temperature_path = os.path.join(path_to_head_dir, "Temperature", "DATAFILES", file.replace("GENEActiv_", "GENEActiv_Temperature_"))
+        temperature_geneactivfile = pyedflib.EdfReader(temperature_path)
+        geneactivfile = temperature_geneactivfile
+    if light_exists:
+        light_path = os.path.join(path_to_head_dir, "Light", "DATAFILES", file.replace("GENEActiv_", "GENEActiv_Light_"))
+        light_geneactivfile = pyedflib.EdfReader(light_path)
+        geneactivfile = light_geneactivfile
+    if button_exists:
+        button_path = os.path.join(path_to_head_dir, "Button", "DATAFILES", file.replace("GENEActiv_", "GENEActiv_Button_"))
+        button_geneactivfile = pyedflib.EdfReader(button_path)
+        geneactivfile = button_geneactivfile
+
+
+    # File Name
+    file_name = file
+    file_name_split = file_name.split("_")
+    if not quiet: print("File Name:", file_name)
+
+
+    # Subject
+    subject = file_name_split[0] + "_" + file_name_split[1] + "_" + file_name_split[2]
+    if not quiet: print("Subject: ", subject)
+
+    # Patient Visit Number
+    patient_visit_number = file_name_split[3]
+    if not quiet: print("Patient Visit Number", patient_visit_number)
+
+    # Data Collection Site
+    data_collection_site = file_name_split[1]
+    if not quiet: print("data collection site: ", data_collection_site)
+
+    # Start Date and Time
+    start_datetime = geneactivfile.getStartdatetime()
+    start_date = start_datetime.strftime("%Y%b%d").upper()
+    start_time = start_datetime.strftime("%H:%M:%S")
+    if not quiet: print("start date: ", start_date)
+    if not quiet: print("start time: ", start_time)
+
+    # Device Location
+    device_location = geneactivfile.getRecordingAdditional()
+    if not quiet: print("device location:", device_location)
+
+    # Serial Number
+    serial_number = geneactivfile.getEquipment()
+    if not quiet: print("Serial Number: ", serial_number)
+
+    # Collection Duration
+    collection_duration = geneactivfile.getFileDuration()
+    collection_duration_datetime = datetime.timedelta(seconds = collection_duration)
+    collection_duration_datetime = str(isodate.duration_isoformat(collection_duration_datetime,'P%dDT%HH%MM%SS'))
+    if not quiet: print("Collection Duration: ", collection_duration)
+    if not quiet: print("Collection Duration Datetime: ", collection_duration_datetime)
+
+    # Sample Rates
+    if accelerometer_exists:
+        accelerometer_sample_rate = geneactivfile.samplefrequency(0)
+    else:
+        accelerometer_sample_rate = "N/A"
+
+    if temperature_exists:
+        temperature_sample_rate = temperature_geneactivfile.samplefrequency(0)
+    else:
+        temperature_sample_rate = "N/A"
+
+    if light_exists:
+        light_sample_rate = light_geneactivfile.samplefrequency(0)
+    else:
+        light_sample_rate = "N/A"
+
+    if button_exists:
+        button_sample_rate = button_geneactivfile.samplefrequency(0)
+    else:
+        button_sample_rate = "N/A"
+
+    summary_metrics_list = {"SUBJECT": subject,
+                            "VISIT": patient_visit_number,
+                            "SITE":data_collection_site,
+                            "DATE":start_date,
+                            "DEVICE_LOCATION": device_location,
+                            "DEVICE_ID": serial_number,
+                            "START_DATE":start_date,
+                            "START_TIME": start_time,
+                            "COLLECTION_DURATION": collection_duration_datetime,
+                            "ACCELEROMETER SAMPLE RATE": accelerometer_sample_rate,
+                            "TEMPERATURE SAMPLE RATE": temperature_sample_rate,
+                            "LIGHT SAMPLE RATE": light_sample_rate,
+                            "BUTTON SAMPLE RATE": button_sample_rate}
+    return summary_metrics_list
+
+
+
+
+
+
+# ================================= Retired Functions ========================================
+
 def device_summary_metrics(path_to_edf, quiet=False):
     '''
     Extracts summary metrics from a device level .edf
@@ -50,7 +164,7 @@ def device_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("start date: ", start_date)
     if not quiet: print("start time: ", start_time)
 
-    # Collection Duration (in days)
+    # Collection Duration (in hours)
     collection_duration = geneactivfile.getFileDuration() / 60 / 60
     if not quiet: print("Collection Duration: ", collection_duration)
 
@@ -180,7 +294,7 @@ def accelerometer_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("start date: ", start_date)
     if not quiet: print("start time: ", start_time)
 
-    # Collection Duration (in days)
+    # Collection Duration (in hours)
     collection_duration = geneactivfile.getFileDuration() / 60 / 60
     if not quiet: print("Collection Duration: ", collection_duration)
 
@@ -283,7 +397,7 @@ def temperature_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("start date: ", start_date)
     if not quiet: print("start time: ", start_time)
 
-    # Collection Duration (in days)
+    # Collection Duration (in hours)
     collection_duration = geneactivfile.getFileDuration() / 60 / 60
     if not quiet: print("Collection Duration: ", collection_duration)
 
@@ -458,7 +572,7 @@ def button_summary_metrics(path_to_edf, quiet=False):
     if not quiet: print("start date: ", start_date)
     if not quiet: print("start time: ", start_time)
 
-    # Collection Duration (in days)
+    # Collection Duration (in hours)
     collection_duration = geneactivfile.getFileDuration() / 60 / 60
     if not quiet: print("Collection Duration: ", collection_duration)
 

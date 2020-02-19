@@ -9,17 +9,18 @@ from summary_metrics import *
 import os
 import pyedflib
 import datetime
+import numpy as np
 
 # ======================================== FUNCTION =========================================
 def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, overwrite=False, quiet=False):
     """
-    The folder_convert function takes a folder of GENEActiv files and converts them all to an edf file type following the predetermined folder structure
+    The folder_convert function takes a folder of GENEActiv files and converts them all to an edf file type following a predetermined folder structure
 
     Args:
         input_dir: string
             Path to directory with all the binary GENEActive files
         output_dir: string
-            Path to head directory where you want all the EDF files to go ([ONDO5]_[GENEActiv] in Folder structure example)
+            Path to head directory where you want all the EDF files to go ([OND05]_[GENEActiv] in Folder structure example)
         device_edf: Bool
             Do you want the function to create a device wide EDF file that stores all 5 sensors in one EDF file
         correct_drift: Bool
@@ -120,131 +121,112 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
     if not quiet: print("Conversion Complete")
 
     # Create Summary Metrics and File Lists
-    dir_list = [accelerometer_dir, temperature_dir, light_dir, button_dir]
-    if device_edf == True:
-        dir_list.append(device_dir)
-    for x in dir_list:
-        csv_file_list(x, "OND05_FILELIST_GENEActiv.csv", quiet=quiet)
-        summary_metrics_folder_structure(x, quiet=quiet)
+    csv_file_list(output_dir, quiet=quiet)
+    summary_metrics_csv(output_dir, quiet=quiet)
 
 
-def summary_metrics_folder_structure(path_to_DATAFILES, quiet=False):
-    """
-    Uses the data pulled from the functions in the Files.summary_metrics file to create csv data in the approved format
-
-    Notes:
-        This will only work if the proper folder format is defined. i.e. must have a sensor name directory (ACCELEROMETER, ...) 1 level up from DATAFILES directories
-
-    
-    """
-    sensor = os.path.basename(os.path.dirname(path_to_DATAFILES))
-    file_list = [f for f in os.listdir(path_to_DATAFILES) if f.endswith('.edf')]
-    if sensor == 'Device':
-        filename = "OND05_" + sensor + "_SummaryMetrics.csv"
-        device_list = []
-        for file in file_list:
-            device_list.append(device_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        device_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
-                               "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD",
-                               "ACC_Z_MEAN",
-                               "ACC_Z_SD", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD",
-                               "BUTTON_SAMPLE_RATE",
-                               "BUTTON_MEAN", "BUTTON_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
-        device_df = pd.DataFrame(device_list, columns=device_column_names).round(3)
-        full_path = os.path.join(os.path.dirname(path_to_DATAFILES),filename)
-        device_df.to_csv(full_path, mode="w", index=False)
-
-    if sensor == 'Accelerometer':
-        filename = "OND05_" + sensor + "_SummaryMetrics.csv"
-        accelerometer_list = []
-        for file in file_list:
-            accelerometer_list.append(accelerometer_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        accelerometer_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
-                                      "DEVICE_LOCATION", "ACC_SAMPLE_RATE", "ACC_MEAN", "ACC_SD", "ACC_X_MEAN", "ACC_X_SD", "ACC_Y_MEAN", "ACC_Y_SD",
-                                      "ACC_Z_MEAN",
-                                      "ACC_Z_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
-        accelerometer_df = pd.DataFrame(accelerometer_list, columns=accelerometer_column_names)
-
-        full_path = os.path.join(os.path.dirname(path_to_DATAFILES),filename)
-        accelerometer_df.to_csv(full_path, mode="w", index=False)
-
-    if sensor == 'Temperature':
-        filename = "OND05_" + sensor + "_SummaryMetrics.csv"
-        temperature_list = []
-        for file in file_list:
-            temperature_list.append(temperature_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        temperature_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
-                                    "DEVICE_LOCATION", "TEM_SAMPLE_RATE", "TEM_MEAN", "TEM_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
-        temperature_df = pd.DataFrame(temperature_list, columns=temperature_column_names).round(3)
-        full_path = os.path.join(os.path.dirname(path_to_DATAFILES),filename)
-        temperature_df.to_csv(full_path, mode="w", index=False)
-
-    if sensor == 'Light':
-        filename = "OND05_" + sensor + "_SummaryMetrics.csv"
-        light_list = []
-        for file in file_list:
-            light_list.append(light_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        light_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
-                              "DEVICE_LOCATION", "LIGHT_SAMPLE_RATE", "LIGHT_MEAN", "LIGHT_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
-        light_df = pd.DataFrame(light_list, columns=light_column_names).round(3)
-        full_path = os.path.join(os.path.dirname(path_to_DATAFILES),filename)
-        light_df.to_csv(full_path, mode="w", index=False)
-
-    if sensor == 'Button':
-        filename = "OND05_" + sensor + "_SummaryMetrics.csv"
-        button_list = []
-        for file in file_list:
-            button_list.append(button_summary_metrics(os.path.join(path_to_DATAFILES, file), quiet=quiet))
-        button_column_names = ["SUBJECT", "VISIT", "SITE","DATE","TIME", "DEVICE_ID", "FILE_NAME", "START_DATE","START_TIME", "COLLECTION_DURATION",
-                               "DEVICE_LOCATION", "BUTTON_SAMPLE_RATE", "BUTTON_MEAN", "BUTTON_SD", "CLOCK_DRIFT", "CLOCK_DRIFT_RATE"]
-        button_df = pd.DataFrame(button_list, columns=button_column_names).round(3)
-        full_path = os.path.join(os.path.dirname(path_to_DATAFILES),filename)
-        button_df.to_csv(full_path, mode="w", index=False)
 
 
-def csv_file_list(dir_path, file_name, quiet=False):
-    # Given a path to a directory, creates a file list and names it the file_name argument
-    if not quiet: print("Creating Filelist for", dir_path)
-    dir_path = os.path.abspath(dir_path)
-    file_list = [f for f in os.listdir(dir_path) if f.endswith('.edf')]
+def summary_metrics_csv(path_to_head_dir, quiet = False):
+    accelerometer_file_list = [f.replace("_Accelerometer_","_") for f in os.listdir(os.path.join(path_to_head_dir,"Accelerometer","DATAFILES")) if f.endswith('.edf')]
+    temperature_file_list = [f.replace("_Temperature_","_") for f in os.listdir(os.path.join(path_to_head_dir,"Temperature","DATAFILES")) if f.endswith('.edf')]
+    light_file_list = [f.replace("_Light_","_") for f in os.listdir(os.path.join(path_to_head_dir,"Light","DATAFILES")) if f.endswith('.edf')]
+    button_file_list = [f.replace("_Button_","_") for f in os.listdir(os.path.join(path_to_head_dir,"Button","DATAFILES")) if f.endswith('.edf')]
+    file_list = np.unique(accelerometer_file_list + temperature_file_list + light_file_list + button_file_list)
 
-    #Create lists for each column of dataframe
-    subjects = []
-    visits = []
-    dates = []
-    sizes = []
+    data_dicts_list = []
 
     for file in file_list:
-        #Read EDF
-        path_to_file = os.path.join(dir_path, file)
-        geneactivfile = pyedflib.EdfReader(path_to_file)
+        accelerometer_exists = True
+        temperature_exists = True
+        light_exists = True
+        button_exists = True
+        if file not in accelerometer_file_list:
+            accelerometer_exists = False
+            print("WARNING ", file, " NOT IN ACCELEROMETER FOLDER")
+        if file not in temperature_file_list:
+            temperature_exists = False
+            print("WARNING ", file, " NOT IN TEMPERATURE FOLDER")
+        if file not in light_file_list:
+            light_exists = False
+            print("WARNING ", file, " NOT IN LIGHT FOLDER")
+        if file not in button_file_list:
+            button_exists = False
+            print("WARNING ", file, " NOT IN BUTTON FOLDER")
+        data_dicts_list.append(summary_metrics(path_to_head_dir, file, accelerometer_exists, temperature_exists, light_exists, button_exists, quiet=quiet))
 
-        # File Name
-        file_split = file.split("_")
+    data = {}
+    for k in data_dicts_list[0].keys():
+        data[k] = tuple(data[k] for data in data_dicts_list)
+    print(data)
 
-        # Subject
-        subject = file_split[0] + "_" + file_split[1] + "_" + file_split[2]
-        subjects.append(subject)
+    df = pd.DataFrame(data)
 
-        # Patient Visit Number
-        patient_visit_number = file_split[3]
-        visits.append(patient_visit_number)
+    filename = "OND05_ALL_00_GENEActiv_" + datetime.datetime.now().strftime("%Y%b%d").upper() + "_METADATA.csv"
+    full_path = os.path.join(path_to_head_dir, filename)
+    print(full_path)
+    df.to_csv(full_path, mode="w", index=False)
 
-        # Date TODO: What date to use, extraction? Start? Using extraction date for now
-        extract_date_time = datetime.datetime.strptime(geneactivfile.getPatientAdditional(), "%Y-%m-%d %H:%M:%S.%f")
-        extract_date = extract_date_time.strftime("%Y%b%d").upper()
-        dates.append(extract_date)
 
-        #Size (in bytes)
-        size_bytes = os.path.getsize(path_to_file)
-        sizes.append(size_bytes)
 
-    file_list_df = pd.DataFrame(
-        {'SUBJECT': subjects,
-         'VISIT': visits,
-         'DATE': dates,
-         'SIZE': sizes,
-         'FILENAME': file_list
-         })
-    full_path = os.path.join(dir_path, file_name)
-    file_list_df.to_csv(full_path, mode="w", index = False)
+
+def csv_file_list(path_to_head_dir, quiet=False):
+    # Given a path to a head directory, creates a file list for each sensor
+    accelerometer_path = os.path.join(path_to_head_dir,"Accelerometer","DATAFILES")
+    temperature_path = os.path.join(path_to_head_dir,"Temperature","DATAFILES")
+    light_path = os.path.join(path_to_head_dir,"Light","DATAFILES")
+    button_path = os.path.join(path_to_head_dir,"Button","DATAFILES")
+
+    sensor_paths = {"Accelerometer":accelerometer_path,
+                    "Temperature":temperature_path,
+                    "Light":light_path,
+                    "Button":button_path}
+
+    for key in sensor_paths:
+        dir_path = sensor_paths[key]
+        if not quiet: print("Creating Filelist for", dir_path)
+        dir_path = os.path.abspath(dir_path)
+        file_list = [f for f in os.listdir(dir_path) if f.endswith('.edf')]
+
+        #Create lists for each column of dataframe
+        subjects = []
+        visits = []
+        dates = []
+        sizes = []
+
+        for file in file_list:
+            #Read EDF
+            path_to_file = os.path.join(dir_path, file)
+            geneactivfile = pyedflib.EdfReader(path_to_file)
+
+            # File Name
+            file_split = file.split("_")
+
+            # Subject
+            subject = file_split[0] + "_" + file_split[1] + "_" + file_split[2]
+            subjects.append(subject)
+
+            # Patient Visit Number
+            patient_visit_number = file_split[3]
+            visits.append(patient_visit_number)
+
+            # Date TODO: What date to use, extraction? Start? Using extraction date for now
+            extract_date = datetime.datetime.strftime(geneactivfile.getStartdatetime(), "%Y%b%d").upper()
+            dates.append(extract_date)
+
+            #Size (in bytes)
+            size_bytes = os.path.getsize(path_to_file)
+            sizes.append(size_bytes)
+
+        file_list_df = pd.DataFrame(
+            {'SUBJECT': subjects,
+             'VISIT': visits,
+             'DATE': dates,
+             'SIZE': sizes,
+             'FILENAME': file_list
+             })
+
+        file_name = "OND05_ALL_00_GENEActiv_"+ key +"_"+datetime.datetime.now().strftime("%Y%b%d").upper()+"_FILELIST.csv"
+        full_path = os.path.join(dir_path, file_name)
+        file_list_df.to_csv(full_path, mode="w", index = False)
+
