@@ -158,13 +158,12 @@ def summary_metrics_csv(path_to_head_dir, quiet = False):
     data = {}
     for k in data_dicts_list[0].keys():
         data[k] = tuple(data[k] for data in data_dicts_list)
-    print(data)
 
     df = pd.DataFrame(data)
 
-    filename = "OND05_ALL_00_GENEActiv_" + datetime.datetime.now().strftime("%Y%b%d").upper() + "_METADATA.csv"
+    filename = "OND05_ALL_00_GENEActiv_" + datetime.datetime.now().strftime("%Y%b%d").upper() + "_DATA.csv"
     full_path = os.path.join(path_to_head_dir, filename)
-    print(full_path)
+
     df.to_csv(full_path, mode="w", index=False)
 
 
@@ -214,15 +213,18 @@ def csv_file_list(path_to_head_dir, quiet=False):
             extract_date = datetime.datetime.strftime(geneactivfile.getStartdatetime(), "%Y%b%d").upper()
             dates.append(extract_date)
 
-            #Size (in bytes)
-            size_bytes = os.path.getsize(path_to_file)
-            sizes.append(size_bytes)
+            # Site
+            site = file_split[1]
+
+            # Device Location
+            device_location = geneactivfile.getRecordingAdditional()
 
         file_list_df = pd.DataFrame(
             {'SUBJECT': subjects,
              'VISIT': visits,
+             'SITE': site,
              'DATE': dates,
-             'SIZE': sizes,
+             'DEVICE_LOCATION': device_location,
              'FILENAME': file_list
              })
 

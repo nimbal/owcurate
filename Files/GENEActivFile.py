@@ -15,8 +15,6 @@ import time
 mstyle.use('fast')
 
 
-
-
 # ======================================== GENEActivFile CLASS ========================================
 class GENEActivFile:
 
@@ -30,33 +28,33 @@ class GENEActivFile:
 
         # metadata stored in file header or related to entire file
         self.file_info = {
-            "serial_num" : None,
-            "device_type" : None,
+            "serial_num": None,
+            "device_type": None,
             "accelerometer_units": None,
-            "accelerometer_physical_min" : None,
+            "accelerometer_physical_min": None,
             "accelerometer_physical_max": None,
-            "temperature_units" : None,
-            "temperature_physical_max" : None,
+            "temperature_units": None,
+            "temperature_physical_max": None,
             "temperature_physical_min": None,
-            "light_units" : None,
-            "light__physical_max" :None,
+            "light_units": None,
+            "light__physical_max": None,
             "light__physical_min": None,
-            "measurement_frequency" : None,
-            "temperature_frequency" : None,
-            "measurement_period" : None,
-            "start_time" : None,  # Using first 'Page Time' rather than "start time" because its half a millisecond ahead
-            "study_centre" : None,
-            "study_code" : None,
-            "investigator_id" : None,
-            "exercise_type" : None,
-            "config_id" : None,
-            "config_time" : None,
-            "config_notes" : None,
-            "extract_id" : None,
-            "extract_time" : None,
-            "extract_notes" : None,
-            "clock_drift" : None,
-            "clock_drift_rate" : None,
+            "measurement_frequency": None,
+            "temperature_frequency": None,
+            "measurement_period": None,
+            "start_time": None,  # Using first 'Page Time' rather than "start time" because its half a millisecond ahead
+            "study_centre": None,
+            "study_code": None,
+            "investigator_id": None,
+            "exercise_type": None,
+            "config_id": None,
+            "config_time": None,
+            "config_notes": None,
+            "extract_id": None,
+            "extract_time": None,
+            "extract_notes": None,
+            "clock_drift": None,
+            "clock_drift_rate": None,
             "device_location": None,
             "subject_id": None,
             "date_of_birth": None,
@@ -65,44 +63,43 @@ class GENEActivFile:
             "weight": None,
             "handedness_code": None,
             "subject_notes": None,
-            "number_of_pages": None,              # from header
-            "pagecount" : None,                # count from datapacket
-            "pagecount_match" : None,
-            "samples" : None,
+            "number_of_pages": None,  # from header
+            "pagecount": None,  # count from datapacket
+            "pagecount_match": None,
+            "samples": None,
             "x_gain": None,
             "x_offset": None,
-            "y_gain" : None,
+            "y_gain": None,
             "y_offset": None,
             "z_gain": None,
             "z_offset": None,
             "volts": None,
             "lux": None,
-            "x_min" : None,
-            "y_min" : None,
-            "z_min" : None,
-            "x_max" : None,
-            "y_max" : None,
-            "z_max" : None,
-            "light_min" : None,
-            "light_max" : None}
+            "x_min": None,
+            "y_min": None,
+            "z_min": None,
+            "x_max": None,
+            "y_max": None,
+            "z_max": None,
+            "light_min": None,
+            "light_max": None}
 
         # data read from file (may be partial pages and/or downsampled - see file_metadata)
         self.data = {
-            "x" : [],
-            "y" : [],
-            "z" : [],
-            "temperature" : [],
-            "light" : [],
-            "button" : [],
-            "start_page" : None,
-            "end_page" : None,
-            "start_time" : None,
-            "sample_rate" : None,
-            "temp_sample_rate" : None}
+            "x": [],
+            "y": [],
+            "z": [],
+            "temperature": [],
+            "light": [],
+            "button": [],
+            "start_page": None,
+            "end_page": None,
+            "start_time": None,
+            "sample_rate": None,
+            "temp_sample_rate": None}
 
-
-    def read(self, parse_data = True, start = 1, end = -1, downsample = 1,
-             calibrate = True, correct_drift = False, update = True, quiet = False):
+    def read(self, parse_data=True, start=1, end=-1, downsample=1,
+             calibrate=True, correct_drift=False, update=True, quiet=False):
 
         '''
         read() reads a raw GENEActiv .bin file
@@ -119,7 +116,6 @@ class GENEActivFile:
         read_start_time = time.time()
         # if file does not exist then exit
         if not os.path.exists(self.file_path):
-
             print(f"****** WARNING: {self.file_path} does not exist.\n")
             return
 
@@ -147,57 +143,58 @@ class GENEActivFile:
 
         # Extract and format relevant metadata from header
         self.file_info.update({
-            "serial_num" : self.header["Device Unique Serial Code"],
-            "device_type" : self.header["Device Type"],
+            "serial_num": self.header["Device Unique Serial Code"],
+            "device_type": self.header["Device Type"],
             "accelerometer_units": self.header['Accelerometer Units'],
-            "accelerometer_physical_min" : int(self.header['Accelerometer Range'][:2]),
+            "accelerometer_physical_min": int(self.header['Accelerometer Range'][:2]),
             "accelerometer_physical_max": int(self.header['Accelerometer Range'][6]),
-            "temperature_units" : self.header["Temperature Sensor Units"],
-            "temperature_physical_max" : int(self.header["Temperature Sensor Range"][0]),
+            "temperature_units": self.header["Temperature Sensor Units"],
+            "temperature_physical_max": int(self.header["Temperature Sensor Range"][0]),
             "temperature_physical_min": int(self.header["Temperature Sensor Range"][5:7]),
-            "light_units" : self.header["Light Meter Units"],
-            "light_physical_max" :int(self.header["Light Meter Range"][0]),
+            "light_units": self.header["Light Meter Units"],
+            "light_physical_max": int(self.header["Light Meter Range"][0]),
             "light_physical_min": int(self.header["Light Meter Range"][5:9]),
-            "measurement_frequency" : int(self.header["Measurement Frequency"].split(" ")[0]),
-            "temperature_frequency" : int(self.header["Measurement Frequency"].split(" ")[0]) / 300,
-            "measurement_period" : int(self.header["Measurement Period"].split(" ")[0]), #???????
-            "start_time" : datetime.datetime.strptime(self.data_packet[3][10:], "%Y-%m-%d %H:%M:%S:%f"),  # Using first 'Page Time' rather than "start time" because its half a millisecond ahead
-            "study_centre" : self.header["Study Centre"],
-            "study_code" : self.header["Study Code"],
-            "investigator_id" : self.header["Investigator ID"],
-            "exercise_type" : self.header["Exercise Type"],
-            "config_id" : self.header["Config Operator ID"],
-            "config_time" : datetime.datetime.strptime(self.header["Config Time"], "%Y-%m-%d %H:%M:%S:%f"),
-            "config_notes" : self.header["Config Notes"],
-            "extract_id" : self.header["Extract Operator ID"],
-            "extract_time" : datetime.datetime.strptime(self.header["Extract Time"], "%Y-%m-%d %H:%M:%S:%f"),
-            "extract_notes" : self.header["Extract Notes"],
-            "clock_drift" : float(self.header["Extract Notes"].split(" ")[3][:-2].replace(",", "")),
-            "device_location" : self.header["Device Location Code"].replace(" ", "_"),
-            "subject_id" : self.header["Subject Code"],
-            "date_of_birth" : self.header["Date of Birth"],
-            "sex" : self.header["Sex"],
-            "height" : self.header["Height"],
-            "weight" : self.header['Weight'],
-            "handedness_code" : self.header["Handedness Code"],
-            "subject_notes" : self.header["Subject Notes"],                  #If there is a line break in your notes, will only show first line
-            "number_of_pages" : int(self.header["Number of Pages"]),
-            "x_gain" : int(self.header["x gain"]),
-            "x_offset" : int(self.header["x offset"]),
-            "y_gain" : int(self.header["y gain"]),
-            "y_offset" : int(self.header["y offset"]),
-            "z_gain" : int(self.header["z gain"]),
-            "z_offset" : int(self.header["z offset"]),
-            "volts" : int(self.header["Volts"]),
-            "lux" : int(self.header["Lux"]),
-            "x_min" : (-204800 - int(self.header['x offset'])) / int(self.header['x gain']),
-            "y_min" : (-204800 - int(self.header['y offset'])) / int(self.header['y gain']),
-            "z_min" : (-204800 - int(self.header['z offset'])) / int(self.header['z gain']),
-            "x_max" : (204700 - int(self.header['x offset'])) / int(self.header['x gain']),
-            "y_max" : (204700 - int(self.header['y offset'])) / int(self.header['y gain']),
-            "z_max" : (204700 - int(self.header['z offset'])) / int(self.header['z gain']),
-            "light_min" : 0 * int(self.header['Lux']) / int(self.header['Volts']),
-            "light_max" : 1023 * int(self.header['Lux']) / int(self.header['Volts'])})
+            "measurement_frequency": int(self.header["Measurement Frequency"].split(" ")[0]),
+            "temperature_frequency": int(self.header["Measurement Frequency"].split(" ")[0]) / 300,
+            "measurement_period": int(self.header["Measurement Period"].split(" ")[0]),  # ???????
+            "start_time": datetime.datetime.strptime(self.data_packet[3][10:], "%Y-%m-%d %H:%M:%S:%f"),
+            # Using first 'Page Time' rather than "start time" because its half a millisecond ahead
+            "study_centre": self.header["Study Centre"],
+            "study_code": self.header["Study Code"],
+            "investigator_id": self.header["Investigator ID"],
+            "exercise_type": self.header["Exercise Type"],
+            "config_id": self.header["Config Operator ID"],
+            "config_time": datetime.datetime.strptime(self.header["Config Time"], "%Y-%m-%d %H:%M:%S:%f"),
+            "config_notes": self.header["Config Notes"],
+            "extract_id": self.header["Extract Operator ID"],
+            "extract_time": datetime.datetime.strptime(self.header["Extract Time"], "%Y-%m-%d %H:%M:%S:%f"),
+            "extract_notes": self.header["Extract Notes"],
+            "clock_drift": float(self.header["Extract Notes"].split(" ")[3][:-2].replace(",", "")),
+            "device_location": self.header["Device Location Code"].replace(" ", "_"),
+            "subject_id": self.header["Subject Code"],
+            "date_of_birth": self.header["Date of Birth"],
+            "sex": self.header["Sex"],
+            "height": self.header["Height"],
+            "weight": self.header['Weight'],
+            "handedness_code": self.header["Handedness Code"],
+            "subject_notes": self.header["Subject Notes"],  # If there is a line break in your notes, will only show first line
+            "number_of_pages": int(self.header["Number of Pages"]),
+            "x_gain": int(self.header["x gain"]),
+            "x_offset": int(self.header["x offset"]),
+            "y_gain": int(self.header["y gain"]),
+            "y_offset": int(self.header["y offset"]),
+            "z_gain": int(self.header["z gain"]),
+            "z_offset": int(self.header["z offset"]),
+            "volts": int(self.header["Volts"]),
+            "lux": int(self.header["Lux"]),
+            "x_min": (-204800 - int(self.header['x offset'])) / int(self.header['x gain']),
+            "y_min": (-204800 - int(self.header['y offset'])) / int(self.header['y gain']),
+            "z_min": (-204800 - int(self.header['z offset'])) / int(self.header['z gain']),
+            "x_max": (204700 - int(self.header['x offset'])) / int(self.header['x gain']),
+            "y_max": (204700 - int(self.header['y offset'])) / int(self.header['y gain']),
+            "z_max": (204700 - int(self.header['z offset'])) / int(self.header['z gain']),
+            "light_min": 0 * int(self.header['Lux']) / int(self.header['Volts']),
+            "light_max": 1023 * int(self.header['Lux']) / int(self.header['Volts'])})
 
         # calculate pagecount from data_packet
 
@@ -210,7 +207,6 @@ class GENEActivFile:
 
         # check if pages read is an integer (lines read is multiple of 10)
         if not pagecount.is_integer():
-
             # set match to false and display warning
             self.file_info["pagecount_match"] = False
             print(f"****** WARNING: Pages read ({pagecount}) is not",
@@ -218,7 +214,6 @@ class GENEActivFile:
 
         # check if pages read matches header count
         if pagecount != header_pagecount:
-
             # set match to false and display warning
             self.file_info["pagecount_match"] = False
             print(f"****** WARNING: Pages read ({pagecount}) not equal to",
@@ -230,20 +225,19 @@ class GENEActivFile:
         # cacluate number of samples
         self.file_info["samples"] = self.file_info["pagecount"] * 300
 
-        #calculate clock drift rate
+        # calculate clock drift rate
         total_seconds = (self.file_info["extract_time"] - self.file_info["config_time"]).total_seconds()
         self.file_info["clock_drift_rate"] = self.file_info["clock_drift"] / total_seconds
 
         # parse data from hexadecimal
         if parse_data:
-            self.parse_data(start = start, end = end, downsample = downsample, calibrate = calibrate,
-                            correct_drift = correct_drift, update = update, quiet = quiet)
+            self.parse_data(start=start, end=end, downsample=downsample, calibrate=calibrate,
+                            correct_drift=correct_drift, update=update, quiet=quiet)
 
-        if not quiet: print("Done reading file. Time to read file: ", time.time()-read_start_time)
+        if not quiet: print("Done reading file. Time to read file: ", time.time() - read_start_time)
 
-
-    def parse_data(self, start = 1, end = -1, downsample = 1, calibrate = True,
-                   correct_drift = False, update = True, quiet = False):
+    def parse_data(self, start=1, end=-1, downsample=1, calibrate=True,
+                   correct_drift=False, update=True, quiet=False):
         def twos_comp(val, bits):
             """ This method calculates the twos complement value of the current bit
             Args:
@@ -263,7 +257,6 @@ class GENEActivFile:
 
         # check whether data has been read
         if not self.header or self.data_packet is None or pagecount is None:
-
             print('****** WARNING: Cannot parse data because file has not',
                   'been read.\n')
             return
@@ -276,15 +269,21 @@ class GENEActivFile:
         old_downsample = downsample
 
         # check start and end for acceptable values
-        if start < 1: start = 1
-        elif start > pagecount: start = round(pagecount)
+        if start < 1:
+            start = 1
+        elif start > pagecount:
+            start = round(pagecount)
 
-        if end == -1 or end > pagecount: end = round(pagecount)
-        elif end < start: end = start
+        if end == -1 or end > pagecount:
+            end = round(pagecount)
+        elif end < start:
+            end = start
 
-        #check downsample for valid values
-        if downsample < 1: downsample = 1
-        elif downsample > 6: downsample = 6
+        # check downsample for valid values
+        if downsample < 1:
+            downsample = 1
+        elif downsample > 6:
+            downsample = 6
 
         # get calibration variables
         if calibrate:
@@ -318,8 +317,7 @@ class GENEActivFile:
 
         # grab chunk of data from packet
         data_chunk = [self.data_packet[i]
-                    for i in range((start - 1) * 10 + 9, end * 10, 10)]
-
+                      for i in range((start - 1) * 10 + 9, end * 10, 10)]
 
         i = 0
 
@@ -337,7 +335,7 @@ class GENEActivFile:
             for j in range(0, 300, downsample):
 
                 # parse measurement from line and convert from hex to bin
-                meas = data_line[j * 12 : (j + 1) * 12]
+                meas = data_line[j * 12: (j + 1) * 12]
                 meas = bin(int(meas, 16))[2:]
                 meas = meas.zfill(48)
 
@@ -353,7 +351,7 @@ class GENEActivFile:
                 meas_x = twos_comp(meas_x, 12)
                 meas_y = twos_comp(meas_y, 12)
                 meas_z = twos_comp(meas_z, 12)
-                #light = twos_comp(light, 10) # NOT NEEDED, not a signed integer? TEST TO SEE IF THIS FIXES HIGH VALUES??
+                # light = twos_comp(light, 10) # NOT NEEDED, not a signed integer? TEST TO SEE IF THIS FIXES HIGH VALUES??
 
                 # calibrate data if requrested
                 if calibrate:
@@ -369,32 +367,30 @@ class GENEActivFile:
                 light.append(meas_light)
                 button.append(meas_button)
 
-
         # get all temperature lines from data packet (1 per page)
         temperature_chunk = [self.data_packet[i]
-                      for i in range((start - 1) * 10 + 5, end * 10, 10)]
+                             for i in range((start - 1) * 10 + 5, end * 10, 10)]
 
         # parse temperature from temperature lines and insert into dict
         for temperature_line in temperature_chunk:
             colon = temperature_line.index(':')
             temperature.append(float(temperature_line[colon + 1:]))
 
-
         if not quiet: print("Storing parsed data ...")
 
-        data = {"x" : np.array(x),
-                "y" : np.array(y),
-                "z" : np.array(z),
-                "light" : np.array(light),
-                "button" : np.array(button),
-                "temperature" : np.array(temperature),
-                "start_page" : start,
-                "end_page" : end,
-                "start_time" : start_time,
-                "sample_rate" : downsampled_rate,
-                "temperature_sample_rate" : self.file_info["temperature_frequency"]}
+        data = {"x": np.array(x),
+                "y": np.array(y),
+                "z": np.array(z),
+                "light": np.array(light),
+                "button": np.array(button),
+                "temperature": np.array(temperature),
+                "start_page": start,
+                "end_page": end,
+                "start_time": start_time,
+                "sample_rate": downsampled_rate,
+                "temperature_sample_rate": self.file_info["temperature_frequency"]}
 
-         # correct clock drift
+        # correct clock drift
         if correct_drift:
 
             if not quiet: print("Correcting clock drift ...")
@@ -404,8 +400,7 @@ class GENEActivFile:
             adjust_start = int(time_to_start * data["sample_rate"] * abs(self.file_info["clock_drift_rate"]))
             adjust_start_temperature = int(time_to_start * data["temperature_sample_rate"] * abs(self.file_info["clock_drift_rate"]))
 
-            if self.file_info["clock_drift_rate"] > 0: #if drift is positive then remove extra samples
-
+            if self.file_info["clock_drift_rate"] > 0:  # if drift is positive then remove extra samples
 
                 for key in ["x", "y", "z", "light", "button", "temperature"]:
 
@@ -414,30 +409,27 @@ class GENEActivFile:
                                           [round(adjust_rate * (i + 1)) for i in
                                            range(int(len(data[key]) / adjust_rate))])
 
-
                     # delete data from start of each signal to account for time from config to start
                     if key == "temperature":
                         data[key] = np.delete(data[key], range(adjust_start_temperature))
                     else:
                         data[key] = np.delete(data[key], range(adjust_start))
 
-            else: #else add samples
+            else:  # else add samples
 
                 for key in ["x", "y", "z", "light", "button", "temperature"]:
 
                     # insert data into each signal
                     data[key] = np.insert(data[key],
                                           [round(adjust_rate * (i + 1)) for i in
-                                           range(int(len(data[key]) / adjust_rate))], 0) # Todo: decide on what value to assign to the clock drift values
-
-
+                                           range(int(len(data[key]) / adjust_rate))],
+                                          0)  # Todo: decide on what value to assign to the clock drift values
 
                     # insert data into start of each signal to account for time from config to start
                     if key == "temperature":
                         data[key] = np.insert(data[key], 0, [0] * adjust_start_temperature)
                     else:
                         data[key] = np.insert(data[key], 0, [0] * adjust_start)
-
 
         # update data attribute if requested
         if update: self.data = data
@@ -458,8 +450,8 @@ class GENEActivFile:
 
         return data
 
-    def create_pdf(self, pdf_folder, window_hours = 4, downsample = 5,
-                   correct_drift = False, quiet = False):
+    def create_pdf(self, pdf_folder, window_hours=4, downsample=5,
+                   correct_drift=False, quiet=False):
 
         '''creates a pdf summary of the file
         Parameters
@@ -505,15 +497,15 @@ class GENEActivFile:
         # calculate pages per plot
         window_pages = round((window_hours * 60 * 60 * sample_rate) / 300)
         window_sequence = range(1, round(self.file_info["pagecount"]), window_pages)
-        #window_sequence = range(1, window_pages*6, window_pages)
+        # window_sequence = range(1, window_pages*6, window_pages)
 
         # CREATE PLOTS ------
 
         if not quiet: print("Generating plots ...")
 
         # define date locators and formatters
-        #hours = mdates.HourLocator()
-        #hours_fmt = mdates.DateFormatter('%H:%M')
+        # hours = mdates.HourLocator()
+        # hours_fmt = mdates.DateFormatter('%H:%M')
 
         # set plot parameters
 
@@ -522,11 +514,11 @@ class GENEActivFile:
         # a minimum range, actual range is slightly larger)
 
         accelerometer_min = min([self.file_info["x_min"],
-                         self.file_info["y_min"],
-                         self.file_info["z_min"]])
+                                 self.file_info["y_min"],
+                                 self.file_info["z_min"]])
         accelerometer_max = max([self.file_info["x_max"],
-                         self.file_info["y_max"],
-                         self.file_info["z_max"]])
+                                 self.file_info["y_max"],
+                                 self.file_info["z_max"]])
         accelerometer_range = accelerometer_max - accelerometer_min
         accelerometer_buffer = accelerometer_range * 0.1
 
@@ -536,11 +528,11 @@ class GENEActivFile:
         light_buffer = light_range * 0.1
 
         yaxis_lim = [[accelerometer_min - accelerometer_buffer, accelerometer_max + accelerometer_buffer],
-                    [accelerometer_min - accelerometer_buffer, accelerometer_max + accelerometer_buffer],
-                    [accelerometer_min - accelerometer_buffer, accelerometer_max + accelerometer_buffer],
-                    [light_min - light_buffer, light_max + light_buffer],
-                    [-0.01, 1],
-                    [9.99, 40.01]]
+                     [accelerometer_min - accelerometer_buffer, accelerometer_max + accelerometer_buffer],
+                     [accelerometer_min - accelerometer_buffer, accelerometer_max + accelerometer_buffer],
+                     [light_min - light_buffer, light_max + light_buffer],
+                     [-0.01, 1],
+                     [9.99, 40.01]]
 
         yaxis_ticks = [[-8, 0, 8],
                        [-8, 0, 8],
@@ -561,7 +553,6 @@ class GENEActivFile:
                        [self.file_info["z_min"], 0, self.file_info["z_max"]],
                        [light_min, light_max]]
 
-
         line_color = ["b", "g", "r", "c", "m", "y"]
 
         plt.rcParams["lines.linewidth"] = 0.25
@@ -578,19 +569,19 @@ class GENEActivFile:
 
             # get data for current window
             end_index = start_index + window_pages - 1
-            plot_data = self.parse_data(start = start_index,
-                                        end = end_index,
-                                        downsample = downsample,
-                                        update = False,
-                                        correct_drift = correct_drift,
-                                        quiet = quiet)
+            plot_data = self.parse_data(start=start_index,
+                                        end=end_index,
+                                        downsample=downsample,
+                                        update=False,
+                                        correct_drift=correct_drift,
+                                        quiet=quiet)
 
             # format start and end date for current window
             time_format = "%b %-d, %Y (%A) @ %H:%M:%S.%f"
             window_start = plot_data["start_time"]
             window_start_txt = window_start.strftime(time_format)[:-3]
 
-            window_end = window_start + datetime.timedelta(hours = window_hours)
+            window_end = window_start + datetime.timedelta(hours=window_hours)
             window_end_txt = window_end.strftime(time_format)[:-3]
 
             # initialize figure with subplots
@@ -598,7 +589,7 @@ class GENEActivFile:
 
             # insert date range as plot title
             fig.suptitle(f'{window_start_txt} to {window_end_txt}',
-                         fontsize = 8, y = 0.96)
+                         fontsize=8, y=0.96)
 
             # initialize subplot index
             subplot_index = 0
@@ -608,39 +599,38 @@ class GENEActivFile:
 
                 # plot signal
                 ax[subplot_index].plot(plot_data[key],
-                                       color = line_color[subplot_index])
+                                       color=line_color[subplot_index])
 
                 # remove box around plot
                 ax[subplot_index].spines["top"].set_visible(False)
                 ax[subplot_index].spines["bottom"].set_visible(False)
                 ax[subplot_index].spines["right"].set_visible(False)
 
-##                # set axis ticks and labels
-##                ax[subplot_index].xaxis.set_major_locator(hours)
-##                ax[subplot_index].xaxis.set_major_formatter(hours_fmt)
-##                if subplot_index != 5:
-##                    ax[subplot_index].set_xticklabels([])
+                ##                # set axis ticks and labels
+                ##                ax[subplot_index].xaxis.set_major_locator(hours)
+                ##                ax[subplot_index].xaxis.set_major_formatter(hours_fmt)
+                ##                if subplot_index != 5:
+                ##                    ax[subplot_index].set_xticklabels([])
 
                 ax[subplot_index].set_yticks(yaxis_ticks[subplot_index])
                 units = yaxis_units[subplot_index]
                 ax[subplot_index].set_ylabel(f'{key} ({units})')
 
-
-##                # set vertical lines on plot at hours
-##                ax[subplot_index].grid(True, 'major', 'x',
-##                                       color = 'k', linestyle = '--')
+                ##                # set vertical lines on plot at hours
+                ##                ax[subplot_index].grid(True, 'major', 'x',
+                ##                                       color = 'k', linestyle = '--')
 
                 # set horizontal lines on plot at zero and limits
                 if subplot_index < 4:
                     for yline in yaxis_lines[subplot_index]:
-                        ax[subplot_index].axhline(y = yline, color = 'grey',
-                                                  linestyle = '-')
+                        ax[subplot_index].axhline(y=yline, color='grey',
+                                                  linestyle='-')
 
                 # set axis limits
                 ax[subplot_index].set_ylim(yaxis_lim[subplot_index])
-##                ax[subplot_index].set_xlim(window_start,
-##                                           window_start +
-##                                           dt.timedelta(hours = 4))
+                ##                ax[subplot_index].set_xlim(window_start,
+                ##                                           window_start +
+                ##                                           dt.timedelta(hours = 4))
 
                 # increment to next subplot
                 subplot_index += 1
@@ -650,7 +640,6 @@ class GENEActivFile:
             fig.savefig(os.path.join(png_folder, png_file))
             plt.close(fig)
 
-
         # CREATE PDF ------
 
         if not quiet: print("Building PDF ...")
@@ -658,15 +647,15 @@ class GENEActivFile:
         # HEADER PAGE ----------------
 
         # initialize pdf
-        pdf = fpdf.FPDF(format = 'letter')
+        pdf = fpdf.FPDF(format='letter')
 
         # add first page and print file name at top
         pdf.add_page()
-        pdf.set_font("Courier", size = 16)
-        pdf.cell(200, 10, txt = bin_name, ln = 1, align = 'C', border = 0)
+        pdf.set_font("Courier", size=16)
+        pdf.cell(200, 10, txt=bin_name, ln=1, align='C', border=0)
 
         # set font for header info
-        pdf.set_font("Courier", size = 12)
+        pdf.set_font("Courier", size=12)
         header_text = '\n'
 
         # find length of longest key in header
@@ -677,7 +666,7 @@ class GENEActivFile:
             header_text = header_text + f"{key:{key_length}}:  {value}\n"
 
         # print header to pdf
-        pdf.multi_cell(200, 5, txt = header_text, align = 'L')
+        pdf.multi_cell(200, 5, txt=header_text, align='L')
 
         # PLOT DATA PAGES -------------
 
@@ -687,20 +676,19 @@ class GENEActivFile:
 
         # loop through .png files to add to pdf
         for png_file in png_files:
-
             # create full .png file path
             png_path = os.path.join(png_folder, png_file)
 
             # add page and set font
             pdf.add_page()
-            pdf.set_font("Courier", size = 16)
+            pdf.set_font("Courier", size=16)
 
             # print file_name as header
-            pdf.cell(0, txt = bin_name, align = 'C')
+            pdf.cell(0, txt=bin_name, align='C')
             pdf.ln()
 
             # insert .png plot into pdf
-            pdf.image(png_path, x = 1, y = 13, type = 'png')
+            pdf.image(png_path, x=1, y=13, type='png')
 
         # SAVE PDF AND DELETE PNGS --------------
 

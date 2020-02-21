@@ -49,7 +49,7 @@ def summary_metrics(path_to_head_dir, file, accelerometer_exists = True, tempera
 
 
     # Subject
-    subject = file_name_split[0] + "_" + file_name_split[1] + "_" + file_name_split[2]
+    subject = "_".join(file_name_split[:3])
     if not quiet: print("Subject: ", subject)
 
     # Patient Visit Number
@@ -71,8 +71,10 @@ def summary_metrics(path_to_head_dir, file, accelerometer_exists = True, tempera
     device_location = geneactivfile.getRecordingAdditional()
     if not quiet: print("device location:", device_location)
 
+    # Sex
+    print("Sex:", geneactivfile.getGender())
     # Serial Number
-    serial_number = geneactivfile.getEquipment()
+    serial_number = str(geneactivfile.getEquipment().split(" ")[1])
     if not quiet: print("Serial Number: ", serial_number)
 
     # Collection Duration
@@ -112,10 +114,10 @@ def summary_metrics(path_to_head_dir, file, accelerometer_exists = True, tempera
                             "START_DATE":start_date,
                             "START_TIME": start_time,
                             "COLLECTION_DURATION": collection_duration_datetime,
-                            "ACCELEROMETER SAMPLE RATE": accelerometer_sample_rate,
-                            "TEMPERATURE SAMPLE RATE": temperature_sample_rate,
-                            "LIGHT SAMPLE RATE": light_sample_rate,
-                            "BUTTON SAMPLE RATE": button_sample_rate}
+                            "ACCELEROMETER_SAMPLE_RATE": '{:.3f}'.format(accelerometer_sample_rate),
+                            "TEMPERATURE_SAMPLE_RATE": '{:.3f}'.format(temperature_sample_rate),
+                            "LIGHT_SAMPLE_RATE": '{:.3f}'.format(light_sample_rate),
+                            "BUTTON_SAMPLE_RATE": '{:.3f}'.format(button_sample_rate)}
     return summary_metrics_list
 
 

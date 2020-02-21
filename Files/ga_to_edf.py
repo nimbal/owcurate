@@ -70,14 +70,19 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
 
     # Create header values
     clock_drift = geneactivfile.file_info["clock_drift"]
-    device_location = geneactivfile.file_info["device_location"]
-    if device_location == '':  #  PyEDFlib can't recognize empty variables in header
-        device_location = os.path.basename(input_file_path).replace(" ", "_").split("_")[-1]
-        device_location = device_location[:-4]
+    device_location = os.path.basename(input_file_path).replace(" ", "_").split("_")[-1]
+    device_location = device_location[:-4]
+    visit = "VISIT_"+accelerometer_file_name.split("_")[3]
+    study_location_id =  "_".join(accelerometer_file_name.split("_")[:3])
     extract_time = geneactivfile.file_info["extract_time"]
     subject_id = geneactivfile.file_info["subject_id"]
-    serial_num = geneactivfile.file_info["serial_num"]
-    sex = geneactivfile.file_info["sex"]
+    serial_num = "GENEActiv_" + geneactivfile.file_info["serial_num"]
+    if geneactivfile.file_info["sex"] == "male":
+        sex = 1
+    elif geneactivfile.file_info["sex"] == "female":
+        sex = 0
+    else:
+        sex = 3
     if geneactivfile.file_info["start_time"].microsecond == 0: # if it doesnt start directly on a second, round start_time up to next second
         start_time = geneactivfile.file_info["start_time"]
     else:
@@ -94,8 +99,8 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         accelerometer_file.setHeader({"technician": "",
                                       "recording_additional": str(device_location),
                                       "patientname": "",
-                                      "patient_additional": "",
-                                      "patientcode": subject_id,
+                                      "patient_additional": visit,
+                                      "patientcode": study_location_id,
                                       "equipment": serial_num,
                                       "admincode": "",
                                       "gender": sex,
@@ -135,8 +140,8 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         temperature_file.setHeader({"technician": "",
                                       "recording_additional": str(device_location),
                                       "patientname": "",
-                                      "patient_additional": "",
-                                      "patientcode": subject_id,
+                                      "patient_additional": visit,
+                                      "patientcode": study_location_id,
                                       "equipment": serial_num,
                                       "admincode": "",
                                       "gender": sex,
@@ -162,8 +167,8 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         light_file.setHeader({"technician": "",
                                       "recording_additional": str(device_location),
                                       "patientname": "",
-                                      "patient_additional": "",
-                                      "patientcode": subject_id,
+                                      "patient_additional": visit,
+                                      "patientcode": study_location_id,
                                       "equipment": serial_num,
                                       "admincode": "",
                                       "gender": sex,
@@ -188,8 +193,8 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         button_file.setHeader({"technician": "",
                                       "recording_additional": str(device_location),
                                       "patientname": "",
-                                      "patient_additional": "",
-                                      "patientcode": subject_id,
+                                      "patient_additional": visit,
+                                      "patientcode": study_location_id,
                                       "equipment": serial_num,
                                       "admincode": "",
                                       "gender": sex,
@@ -222,6 +227,8 @@ def device_ga_to_edf(geneactivfile, device_output_dir, quiet=False):
     device_location = geneactivfile.file_info["device_location"]
     extract_time = geneactivfile.file_info["extract_time"]
     subject_id = geneactivfile.file_info["subject_id"]
+    visit = "VISIT_" + device_file_name.split("_")[3]
+    study_location_id = "_".join(device_file_name.split("_")[:3])
     serial_num = geneactivfile.file_info["serial_num"]
     sex = geneactivfile.file_info["sex"]
     start_time = geneactivfile.file_info["start_time"]
@@ -235,8 +242,8 @@ def device_ga_to_edf(geneactivfile, device_output_dir, quiet=False):
     device_file.setHeader({"technician": "",
                                       "recording_additional": str(device_location),
                                       "patientname": "",
-                                      "patient_additional": "",
-                                      "patientcode": subject_id,
+                                      "patient_additional": visit,
+                                      "patientcode": study_location_id,
                                       "equipment": serial_num,
                                       "admincode": "",
                                       "gender": sex,
@@ -292,88 +299,3 @@ def device_ga_to_edf(geneactivfile, device_output_dir, quiet=False):
         [geneactivfile.data['x'], geneactivfile.data['y'], geneactivfile.data['z'], geneactivfile.data['temperature'], geneactivfile.data["light"], geneactivfile.data["button"]])
     device_file.close()
     if not quiet: print("Seconds to make Device EDF:", time.time() - edf_start_time)
-
-
-def edf_integrity_check(edf_path, binary_path):
-    """
-    to verify that the data in the edf and bin files are the same
-    """
-
-    geneactivfile = GENEActivFile(binary_path)
-    geneactivfile.read()
-
-    # get EDF data
-    edf_data = pyedflib.EdfReader(edf_path)
-    clock_drift = edf_data.getRecordingAdditional()
-    body_location = edf_data.getPatientName()
-    extraction_time = edf_data.getPatientAdditional()
-    subject_id = edf_data.getPatientCode()
-    serial_num = edf_data.getEquipment()
-    start_date = edf_data.getStartdatetime()
-    print("Clock Drift: ", clock_drift)
-    print("Body Location: ", body_location)
-    print("Extraction Time: ", extraction_time)
-    print("Subject ID: ", subject_id)
-    print("Serial Number: ", serial_num)
-    print("Start Date: ", start_date)
-
-
-    print("")
-    print("")
-
-    # Get binary file data
-    bin_clock_drift = geneactivfile.file_info["clock_drift"]
-    bin_body_location = geneactivfile.file_info["device_location"]
-    bin_extraction_time = geneactivfile.file_info["extract_time"]
-    bin_subject_id = geneactivfile.file_info["subject_id"]
-    bin_serial_num = geneactivfile.file_info["serial_num"]
-    bin_start_date = geneactivfile.file_info["start_time"]
-    print("Bin Clock Drift: ", bin_clock_drift)
-    print("Bin Body Location: ", bin_body_location)
-    print("Bin Extraction Time: ", bin_extraction_time)
-    print("Bin Subject ID: ", bin_subject_id)
-    print("Bin Serial Number: ", bin_serial_num)
-    print("Bin Start Date: ", bin_start_date)
-
-    # Compare data
-    bad_match = 0
-    if str(clock_drift) != str(bin_clock_drift):
-        print("**WARNING, clock_drift VALUES DON'T MATCH")
-        print("EDF CLOCK DRIFT: ", clock_drift)
-        print("BIN CLOCK DRIFT: ", bin_clock_drift)
-        bad_match += 1
-
-    if str(body_location) != str(bin_body_location.replace("_", " ")):
-        print("**WARNING, body_location VALUES DON'T MATCH")
-        print("EDF BODY LOCATION: ", body_location)
-        print("BIN BODY LOCATION: ", bin_body_location)
-        bad_match += 1
-
-    if str(extraction_time) != str(bin_extraction_time):
-        print("**WARNING, extraction_time VALUES DON'T MATCH")
-        print("EDF EXTRACTION TIME: ", extraction_time)
-        print("BIN EXTRACTION TIME: ", bin_extraction_time)
-        bad_match += 1
-
-    if str(subject_id) != str(bin_subject_id):
-        print("**WARNING, subject_id VALUES DON'T MATCH")
-        print("EDF SUBJECT ID: ", subject_id)
-        print("BIN SUBJECT ID: ", bin_subject_id)
-        bad_match += 1
-
-    if str(serial_num) != str(bin_serial_num):
-        print("**WARNING, serial_num VALUES DON'T MATCH")
-        print("EDF SERIAL NUMBER: ", subject_id)
-        print("BIN SERIAL NUMBER: ", bin_subject_id)
-        bad_match += 1
-
-    if str(start_date + datetime.timedelta(0,0.5)) != str(bin_start_date):
-        print("**WARNING, start_date VALUES DON'T MATCH")
-        print("EDF START DATE: ", start_date)
-        print("BIN START DATE: ", bin_start_date)
-        bad_match += 1
-
-    if bad_match ==0: print("NO ERRORS")
-
-
-    print("Test Complete with ", bad_match, "bad matches.")
