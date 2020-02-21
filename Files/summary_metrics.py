@@ -111,7 +111,7 @@ def summary_metrics(path_to_head_dir, file, accelerometer_exists = True, tempera
                             "DATE":start_date,
                             "DEVICE_LOCATION": device_location,
                             "DEVICE_ID": serial_number,
-                            "START_DATE":start_date,
+                          #  "START_DATE":start_date,
                             "START_TIME": start_time,
                             "COLLECTION_DURATION": collection_duration_datetime,
                             "ACCELEROMETER_SAMPLE_RATE": '{:.3f}'.format(accelerometer_sample_rate),

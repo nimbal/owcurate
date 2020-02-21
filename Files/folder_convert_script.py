@@ -43,7 +43,7 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
     accelerometer_dir = os.path.join(output_dir, "Accelerometer", "DATAFILES")
     if os.path.exists(accelerometer_dir):
         accelerometer_edf_files = [f for f in os.listdir(accelerometer_dir) if f.endswith('.edf')]
-        accelerometer_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Accelerometer_","_") for f in accelerometer_edf_files]
+        accelerometer_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Accelerometer_","_").replace("_A_","_01_").replace("_B_","_02_") for f in accelerometer_edf_files]
     else:
         if not quiet: print("Creating Proper Directories for Accelerometer Files...")
         os.makedirs(accelerometer_dir)
@@ -53,7 +53,7 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
     temperature_dir = os.path.join(output_dir, "Temperature", "DATAFILES")
     if os.path.exists(temperature_dir):
         temperature_edf_files = [f for f in os.listdir(temperature_dir) if f.endswith('.edf')]
-        temperature_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Temperature_","_") for f in temperature_edf_files]
+        temperature_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Temperature_","_").replace("_A_","_01_").replace("_B_","_02_") for f in temperature_edf_files]
     else:
         if not quiet: print("Creating Proper Directories for Temperature Files...")
         os.makedirs(temperature_dir)
@@ -63,7 +63,7 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
     light_dir = os.path.join(output_dir, "Light", "DATAFILES")
     if os.path.exists(light_dir):
         light_edf_files = [f for f in os.listdir(light_dir) if f.endswith('.edf')]
-        light_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Light_","_") for f in light_edf_files]
+        light_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Light_","_").replace("_A_","_01_").replace("_B_","_02_") for f in light_edf_files]
     else:
         if not quiet: print("Creating Proper Directories for Light Files...")
         os.makedirs(light_dir)
@@ -73,7 +73,7 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
     button_dir = os.path.join(output_dir, "Button", "DATAFILES")
     if os.path.exists(button_dir):
         button_edf_files = [f for f in os.listdir(button_dir) if f.endswith('.edf')]
-        button_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Button_","_") for f in button_edf_files]
+        button_files_used = [f[:-4].replace("_GENEActiv_", "_GA_").replace("_Button_","_").replace("_A_","_01_").replace("_B_","_02_") for f in button_edf_files]
     else:
         if not quiet: print("Creating Proper Directories for Button Files...")
         os.makedirs(button_dir)
@@ -103,6 +103,7 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
 
         # Convert new input files to edf
         for x in new_files:
+            if not quiet: print("--------------------------------------------------------------------------------------------------------------------")
             if not quiet: print("Converting " + x + ".bin...")
             ga_to_edf(input_dir + "\\" + x + ".bin", accelerometer_dir, temperature_dir, light_dir, button_dir, device_dir, device_edf,
                       correct_drift=correct_drift, quiet=quiet)
@@ -115,6 +116,8 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
         overwrite_files = np.unique(overwrite_accelerometer_files + overwrite_temperature_files + overwrite_light_files + overwrite_button_files)
         if not quiet: print("Files that will be overwritten: ", overwrite_files)
         for x in input_files:
+            if not quiet: print("--------------------------------------------------------------------------------------------------------------------")
+            if not quiet: print("Converting " + x + ".bin...")
             ga_to_edf(input_dir + "\\" + x + ".bin", accelerometer_dir, temperature_dir, light_dir, button_dir, device_dir, device_edf,
                       correct_drift=correct_drift, quiet=quiet)
 
@@ -192,6 +195,7 @@ def csv_file_list(path_to_head_dir, quiet=False):
         visits = []
         dates = []
         sizes = []
+        device_locations = []
 
         for file in file_list:
             #Read EDF
@@ -209,22 +213,22 @@ def csv_file_list(path_to_head_dir, quiet=False):
             patient_visit_number = file_split[3]
             visits.append(patient_visit_number)
 
-            # Date TODO: What date to use, extraction? Start? Using extraction date for now
-            extract_date = datetime.datetime.strftime(geneactivfile.getStartdatetime(), "%Y%b%d").upper()
-            dates.append(extract_date)
+            # Date
+            start_date = datetime.datetime.strftime(geneactivfile.getStartdatetime(), "%Y%b%d").upper()
+            dates.append(start_date)
 
             # Site
             site = file_split[1]
 
             # Device Location
-            device_location = geneactivfile.getRecordingAdditional()
+            device_locations.append(geneactivfile.getRecordingAdditional())
 
         file_list_df = pd.DataFrame(
             {'SUBJECT': subjects,
              'VISIT': visits,
              'SITE': site,
              'DATE': dates,
-             'DEVICE_LOCATION': device_location,
+             'DEVICE_LOCATION': device_locations,
              'FILENAME': file_list
              })
 

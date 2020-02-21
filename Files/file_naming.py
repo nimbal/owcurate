@@ -7,7 +7,6 @@ def file_naming(geneactivfile):
     Creates and returns the properly formatted file names for the 4 outputted edf files
     """
     file_name_split = geneactivfile.file_name.split("_")
-    print(file_name_split[3])
     if file_name_split[3] == "01":
         file_name_split[3] = "A"
     elif file_name_split[3] == "02":
