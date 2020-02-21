@@ -98,7 +98,7 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         accelerometer_file = pyedflib.EdfWriter(accelerometer_full_path, 3)
         accelerometer_file.setHeader({"technician": "",
                                       "recording_additional": str(device_location),
-                                      "patientname": "",
+                                      "patientname": "X",
                                       "patient_additional": visit,
                                       "patientcode": study_location_id,
                                       "equipment": serial_num,
