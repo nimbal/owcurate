@@ -193,13 +193,14 @@ def csv_file_list(path_to_head_dir, quiet=False):
         #Create lists for each column of dataframe
         subjects = []
         visits = []
+        sites = []
         dates = []
-        sizes = []
         device_locations = []
 
         for file in file_list:
             #Read EDF
             path_to_file = os.path.join(dir_path, file)
+            if not quiet: print(path_to_file)
             geneactivfile = pyedflib.EdfReader(path_to_file)
 
             # File Name
@@ -218,7 +219,7 @@ def csv_file_list(path_to_head_dir, quiet=False):
             dates.append(start_date)
 
             # Site
-            site = file_split[1]
+            sites.append(file_split[1])
 
             # Device Location
             device_locations.append(geneactivfile.getRecordingAdditional())
@@ -226,7 +227,7 @@ def csv_file_list(path_to_head_dir, quiet=False):
         file_list_df = pd.DataFrame(
             {'SUBJECT': subjects,
              'VISIT': visits,
-             'SITE': site,
+             'SITE': sites,
              'DATE': dates,
              'DEVICE_LOCATION': device_locations,
              'FILENAME': file_list
