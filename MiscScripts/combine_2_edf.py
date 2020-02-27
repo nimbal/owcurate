@@ -36,7 +36,6 @@ def combine_edf(path1, path2, output_path):
         edf_1 = edf_a
         edf_2 = edf_b
     else:
-        header = pyedflib.highlevel.read_edf_header(path2)
         edf_1 = edf_b
         edf_2 = edf_a
 
@@ -107,4 +106,5 @@ def combine_edf(path1, path2, output_path):
 
 
 #combine_edf(r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\Chris Data\Accelerometer\DATAFILES\OND01_WTL_Chris_00_GENEActiv_Accelerometer_LWrist.edf",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\Chris Data\Accelerometer\DATAFILES\OND01_WTL_Chris_00_GENEActiv_Accelerometer_RWrist.edf",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH")
-combine_edf(r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\OND07_WTL_3029_01_BF\09-06-10.EDF",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\OND07_WTL_3029_01_BF\14-01-18.EDF",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH")
+#combine_edf(r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\OND07_WTL_3029_01_BF\09-06-10.EDF",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\OND07_WTL_3029_01_BF\14-01-18.EDF",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH")
+#combine_edf(r"O:\Data\OND07\Raw data\Bittium\OND07_WTL_3027_01_BF\10-09-38.EDF",r"O:\Data\OND07\Raw data\Bittium\OND07_WTL_3027_01_BF\12-09-17.EDF",r"O:\Student_Projects\Kyle Weber")
