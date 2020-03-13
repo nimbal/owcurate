@@ -206,7 +206,7 @@ class GENEActiv:
         self.metadata.update({
             "serial_num": header["Device Unique Serial Code"],
             "device_type": header["Device Type"],
-            "temperature_units": header["Temperature Sensor Units"],
+            "temperature_units": header["Temperature Sensors Units"],
             "measurement_frequency": int(header["Measurement Frequency"].split(" ")[0]),
             "measurement_period": int(header["Measurement Period"].split(" ")[0]),
             "start_time": datetime.datetime.strptime(data_packet[3][10:], "%Y-%m-%d %H:%M:%S:%f"),

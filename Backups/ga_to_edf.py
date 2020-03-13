@@ -149,12 +149,12 @@ def ga_to_edf(input, path, accel="Accelerometer", temperature="Temperature", lig
 
 def EDFToSensor(sensor, accel, ecg, temperature, light, button, metadata="accelerometer"):
     '''
-    EDFToSensor function reads multiple EDF files and transforms them into a universal Sensor class in memory
+    EDFToSensor function reads multiple EDF files and transforms them into a universal Sensors class in memory
 
     TODO: Implement ECG
     TODO: Implement metadata reading from different files
     Args:
-        sensor: initialized owcurate.Sensor.Sensor object
+        sensor: initialized owcurate.Sensors.Sensors object
             This is where the read information will be returned into
         path: String, location to path of files folder
             This goes to the directory of the files folder, where all the files are read in from

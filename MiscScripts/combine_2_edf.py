@@ -101,10 +101,11 @@ def combine_edf(path1, path2, output_path):
     # Write EDF
     header = edf_a.getHeader()
     signal_headers = edf_a.getSignalHeaders()
-    pyedflib.highlevel.write_edf(edf_file = os.path.join(output_path,"combined_edf.edf"), signals = data_final, signal_headers=signal_headers, header=header, digital=False)
+    pyedflib.highlevel.write_edf(edf_file = output_path, signals = data_final, signal_headers=signal_headers, header=header, digital=False)
 
 
 
 #combine_edf(r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\Chris Data\Accelerometer\DATAFILES\OND01_WTL_Chris_00_GENEActiv_Accelerometer_LWrist.edf",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\Chris Data\Accelerometer\DATAFILES\OND01_WTL_Chris_00_GENEActiv_Accelerometer_RWrist.edf",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH")
 #combine_edf(r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\OND07_WTL_3029_01_BF\09-06-10.EDF",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\OND07_WTL_3029_01_BF\14-01-18.EDF",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH")
 #combine_edf(r"O:\Data\OND07\Raw data\Bittium\OND07_WTL_3027_01_BF\10-09-38.EDF",r"O:\Data\OND07\Raw data\Bittium\OND07_WTL_3027_01_BF\12-09-17.EDF",r"O:\Student_Projects\Kyle Weber")
+#combine_edf(r"O:\Data\OND07\Raw data\Bittium\OND07_WTL_3024_01_BF\11-24-09.EDF",r"O:\Data\OND07\Raw data\Bittium\OND07_WTL_3024_01_BF\15-27-42.EDF",r"O:\Student_Projects\Kyle Weber\combined_edf_3024.edf")

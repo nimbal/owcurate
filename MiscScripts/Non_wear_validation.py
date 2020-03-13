@@ -4,8 +4,8 @@
 # ==================== NEUROSCIENCE BALANCE AND MOBILITY LAB
 # ==================== UNIVERSITY OF WATERLOO
 # ====================================================================================================
-from Backups.Converters import *
-from Sensor.Sensor import *
+from EDFToSensor import *
+from Sensor import *
 import datetime
 from pandas.plotting import register_matplotlib_converters
 import seaborn as sns
@@ -13,10 +13,11 @@ import seaborn as sns
 # ======================================== INITIALIZING CONSTANTS AND VARIABLES
 register_matplotlib_converters()
 S = Sensor()
-EDFToSensor(S, "/Users/nimbal/Desktop/Accelerometer/KW_NW_Validation_RW_Accelerometer.EDF", "",
-            "/Users/nimbal/Desktop/Temperature/KW_NW_Validation_RW_Temperature.EDF",
-            "/Users/nimbal/Desktop/Light/KW_NW_Validation_RW_Light.EDF",
-            "/Users/nimbal/Desktop/Button/KW_NW_Validation_RW_Button.EDF")
+#EDFToSensor(S, "/Users/nimbal/Desktop/Accelerometer/KW_NW_Validation_RW_Accelerometer.EDF", "",
+  #          "/Users/nimbal/Desktop/Temperature/KW_NW_Validation_RW_Temperature.EDF",
+  #          "/Users/nimbal/Desktop/Light/KW_NW_Validation_RW_Light.EDF",
+  #          "/Users/nimbal/Desktop/Button/KW_NW_Validation_RW_Button.EDF")
+EDFToSensor(S,r"C:\Users\ahvert\Desktop\Nonwear\Accelerometer\DATAFILES\KW_NW_Validation_RW.edf","",r"C:\Users\ahvert\Desktop\Nonwear\Temperature\DATAFILES\KW_NW_Validation_RW.edf",r"C:\Users\ahvert\Desktop\Nonwear\Light\DATAFILES\KW_NW_Validation_RW.edf",r"C:\Users\ahvert\Desktop\Nonwear\Button\DATAFILES\KW_NW_Validation_RW.edf")
 
 TIMES = S.generate_times(75, len(S.accelerometer.x))
 
@@ -99,6 +100,7 @@ ax2.set_title("Ding Algorithm")
 
 fig.autofmt_xdate()
 fig.tight_layout()
+plt.show()
 
 
 

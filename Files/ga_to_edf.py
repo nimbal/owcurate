@@ -66,7 +66,6 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
 
     #  Number of samples to remove to get as close as possible to the next second
     remove_n_points = round(geneactivfile.data["sample_rate"]*(1000000 - geneactivfile.file_info["start_time"].microsecond) / 1000000)
-    #remove_n_points_temp = round(geneactivfile.data["temperature_sample_rate"]*(1000000-start_time.microsecond)/1000000)
 
     # Create header values
     clock_drift = geneactivfile.file_info["clock_drift"]

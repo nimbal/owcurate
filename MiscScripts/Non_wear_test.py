@@ -6,8 +6,7 @@
 # ====================================================================================================
 
 # ======================================== IMPORTS ========================================
-from Backups.Converters import *
-from Sensor.Sensor import *
+from Sensor import *
 import datetime
 from pandas.plotting import register_matplotlib_converters
 import seaborn as sns
@@ -15,7 +14,7 @@ import seaborn as sns
 # ======================================== INITIALIZATION ========================================
 register_matplotlib_converters()
 
-# ======================================== Four Sensor Objects, one representing each attached device
+# ======================================== Four Sensors Objects, one representing each attached device
 LW = Sensor()
 RW = Sensor()
 LA = Sensor()

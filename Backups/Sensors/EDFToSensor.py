@@ -1,5 +1,16 @@
-def edf_to_sensor(sensor, accelerometer, ecg, temperature, light, button, metadata="accelerometer"):
-    """
+# DAVID DING OCTOBER 30TH 2019
+
+
+# ======================================== IMPORTS ========================================
+
+import pyedflib
+
+
+
+# ======================================== DEFINITIONS ========================================
+
+def EDFToSensor(sensor, accel, ecg, temperature, light, button, metadata="accelerometer"):
+    '''
     EDFToSensor function reads multiple EDF files and transforms them into a universal Sensors class in memory
 
     TODO: Implement ECG
@@ -9,7 +20,7 @@ def edf_to_sensor(sensor, accelerometer, ecg, temperature, light, button, metada
             This is where the read information will be returned into
         path: String, location to path of files folder
             This goes to the directory of the files folder, where all the files are read in from
-        accelerometer: String
+        accel: String
             File name of the accelerometer file to be read in
         ecg: String
             File name of the ECG file to be read in
@@ -19,16 +30,16 @@ def edf_to_sensor(sensor, accelerometer, ecg, temperature, light, button, metada
             File name of the Light sensor file to be read in
         button: String
             File name of the button sensor file to be read in
-        metadata: One of "accel", "ecg", "temperature", "light", "button" that is not empty
+        metadata: One of "accelerometer", "ecg", "temperature", "light", "button" that is not empty
             Chooses which file to return the metadata from (for the overall sensor)
             Not complete yet
 
     Returns:
 
-    """
-    if accelerometer != "":
+    '''
+    if accel != "":
         sensor.init_accelerometer()
-        with pyedflib.EdfReader(accelerometer) as accelerometer_file:
+        with pyedflib.EdfReader(accel) as accelerometer_file:
             header = accelerometer_file.getHeader()
             accelerometer_header = accelerometer_file.getSignalHeader(0)
 

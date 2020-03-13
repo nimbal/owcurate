@@ -546,7 +546,7 @@ class GENEActivFile:
                        self.header["Accelerometer Units"],
                        self.header["Light Meter Units"],
                        "",
-                       self.header["Temperature Sensor Units"]]
+                       self.header["Temperature Sensors Units"]]
 
         yaxis_lines = [[self.file_info["x_min"], 0, self.file_info["x_max"]],
                        [self.file_info["y_min"], 0, self.file_info["y_max"]],

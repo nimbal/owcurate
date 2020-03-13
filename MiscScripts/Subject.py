@@ -3,7 +3,7 @@
 
 
 # ======================================== IMPORTS ========================================
-from Sensor.Sensor import *
+from Sensor import *
 
 
 class Subject:

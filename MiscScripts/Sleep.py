@@ -7,8 +7,7 @@
 
 
 # ======================================== IMPORTS
-from Backups.Converters import *
-from Sensor.Sensor import *
+from Sensor import *
 import matplotlib.pyplot as plt
 from pandas.plotting import register_matplotlib_converters
 import statistics

@@ -1,8 +1,8 @@
 # ======================================== IMPORTS ========================================
-from Sensor.Accelerometer import *
-from Sensor.Thermometer import *
-from Sensor.Light import *
-from Sensor.Button import *
+from Accelerometer import *
+from Thermometer import *
+from Light import *
+from Button import *
 from scipy.signal import butter, filtfilt
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,7 +11,7 @@ import datetime
 import statistics
 
 
-# Sensor class adds a layer of modularity between sensor and person
+# Sensors class adds a layer of modularity between sensor and person
 # This class hopes to solve multi-sensor but uni-device problems such as nonwear
 class Sensor:
     def __init__(self):

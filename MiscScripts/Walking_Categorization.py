@@ -1,6 +1,5 @@
 # ======================================== IMPORTS
-from MiscScripts.Subject import *
-from Backups.Converters import *
+from Sensor import *
 import matplotlib
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -13,7 +12,7 @@ matplotlib.use("MacOSX")
 
 # ======================================== VARIABLE DECLARATION AND INITIALIZATION
 
-# LA, RA, LW, RW are Sensor Type objects
+# LA, RA, LW, RW are Sensors Type objects
 LA = Sensor()
 RA = Sensor()
 LW = Sensor()

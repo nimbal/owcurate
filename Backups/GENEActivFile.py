@@ -136,7 +136,7 @@ class GENEActivFile:
         self.file_info.update({
             "serial_num" : self.header["Device Unique Serial Code"],
             "device_type" : self.header["Device Type"],
-            "temperature_units" : self.header["Temperature Sensor Units"],
+            "temperature_units" : self.header["Temperature Sensors Units"],
             "measurement_frequency" : int(self.header["Measurement Frequency"].split(" ")[0]),
             "temp_frequency" : int(self.header["Measurement Frequency"].split(" ")[0]) / 300,
             "measurement_period" : int(self.header["Measurement Period"].split(" ")[0]), #???????
@@ -534,7 +534,7 @@ class GENEActivFile:
                        self.header["Accelerometer Units"],
                        self.header["Light Meter Units"],
                        "",
-                       self.header["Temperature Sensor Units"]]
+                       self.header["Temperature Sensors Units"]]
 
         yaxis_lines = [[self.file_info["x_min"], 0, self.file_info["x_max"]],
                        [self.file_info["y_min"], 0, self.file_info["y_max"]],
