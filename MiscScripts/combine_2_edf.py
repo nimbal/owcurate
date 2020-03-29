@@ -25,7 +25,7 @@ def combine_edf(path1, path2, output_path):
         An edf with the data points and time stamps combined from EDF1 and EDF2
 
     Notes:
-        Both files must have the same sample rate and
+        Both files must have the same sample rate and the intervals must not overlap
     '''
     #  Read EDF's
     edf_a = pyedflib.EdfReader(path1)
@@ -85,14 +85,14 @@ def combine_edf(path1, path2, output_path):
     print((edf_2_endtime - edf_1.getStartdatetime()).total_seconds())
     time_diff = edf_2.getStartdatetime() - edf_1_endtime
     time_diff = time_diff.seconds
-    if edf_2.getStartdatetime() < edf_1_endtime: #  If end time over lap with start time, return
+    if edf_2.getStartdatetime() < edf_1_endtime:  # If end time over lap with start time, return
         print("ERROR, SAMPLES OVERLAP")
         return
 
     #  Make data set
     data_final = data1
     for n in range(len(freq_1)):
-        data_final[n] = np.append(data_final[n],[0]*(time_diff*freq_1[n]))
+        data_final[n] = np.append(data_final[n], [0] * (time_diff * freq_1[n]))
         data_final[n] = np.append(data_final[n], data2[n])
 
     print(edf_a.getHeader())
@@ -101,11 +101,11 @@ def combine_edf(path1, path2, output_path):
     # Write EDF
     header = edf_a.getHeader()
     signal_headers = edf_a.getSignalHeaders()
-    pyedflib.highlevel.write_edf(edf_file = output_path, signals = data_final, signal_headers=signal_headers, header=header, digital=False)
+    pyedflib.highlevel.write_edf(edf_file=output_path, signals=data_final, signal_headers=signal_headers, header=header,
+                                 digital=False)
 
 
-
-#combine_edf(r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\Chris Data\Accelerometer\DATAFILES\OND01_WTL_Chris_00_GENEActiv_Accelerometer_LWrist.edf",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\Chris Data\Accelerometer\DATAFILES\OND01_WTL_Chris_00_GENEActiv_Accelerometer_RWrist.edf",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH")
-#combine_edf(r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\OND07_WTL_3029_01_BF\09-06-10.EDF",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH\OND07_WTL_3029_01_BF\14-01-18.EDF",r"C:\Users\ahvert\PycharmProjects\owcurate\Data Files DO NOT PUSH")
-#combine_edf(r"O:\Data\OND07\Raw data\Bittium\OND07_WTL_3027_01_BF\10-09-38.EDF",r"O:\Data\OND07\Raw data\Bittium\OND07_WTL_3027_01_BF\12-09-17.EDF",r"O:\Student_Projects\Kyle Weber")
-#combine_edf(r"O:\Data\OND07\Raw data\Bittium\OND07_WTL_3024_01_BF\11-24-09.EDF",r"O:\Data\OND07\Raw data\Bittium\OND07_WTL_3024_01_BF\15-27-42.EDF",r"O:\Student_Projects\Kyle Weber\combined_edf_3024.edf")
+#combine_edf(r"D:\Adam PC\PycharmProjects\owcurate\STEPS_UOW_7914_01_SE01_BF\08-57-53.EDF",
+#            r"D:\Adam PC\PycharmProjects\owcurate\STEPS_UOW_7914_01_SE01_BF\11-13-17.EDF",
+#            r"D:\Adam PC\PycharmProjects\owcurate\STEPS_UOW_7914_01_SE01_BF\COMBINED_7914.EDF")
+# combine_edf(r"O:\Data\STEPS\Raw data\Bittium\STEPS_UOW_1611_01_SE01_BF\20200211\14-04-34.EDF",r"O:\Data\STEPS\Raw data\Bittium\STEPS_UOW_1611_01_SE01_BF\20200211\14-39-49.EDF",r"D:\Adam PC\PycharmProjects\owcurate\combined_edf_1611.edf")
