@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
 import pandas as pd
-import datetime
+import datetime as dt
 from scipy import signal
 
 
@@ -50,8 +50,6 @@ class SensorScripts:
         self.button_duration = None
         self.button_endtime = None
         self.button_timestamps = None
-        self.vanhees_nonwear_df = None
-        self.log_nonwear_df = None
         self.subject_id = None
 
     def read_accelerometer(self, path_to_accelerometer):
@@ -73,10 +71,11 @@ class SensorScripts:
         self.accelerometer_frequency = self.accelerometer.samplefrequency(0)
         self.accelerometer_start_datetime = self.accelerometer.getStartdatetime()
         self.accelerometer_duration = self.accelerometer.getFileDuration()
-        self.accelerometer_endtime = self.accelerometer_start_datetime + datetime.timedelta(
+        self.accelerometer_endtime = self.accelerometer_start_datetime + dt.timedelta(
             seconds=len(self.x_values) / self.accelerometer_frequency)  # Currently using X values
         self.accelerometer_timestamps = np.asarray(
-            pd.date_range(self.accelerometer_start_datetime, self.accelerometer_endtime, periods=len(self.x_values)))  # Currently using X values
+            pd.date_range(self.accelerometer_start_datetime, self.accelerometer_endtime,
+                          periods=len(self.x_values)))  # Currently using X values
 
         if self.subject_id is None or self.subject_id == os.path.basename(path_to_accelerometer).split("_")[-1][:-4]:
             self.subject_id = os.path.basename(path_to_accelerometer).split("_")[-1][:-4]
@@ -104,13 +103,15 @@ class SensorScripts:
 
         self.temperature = pyedflib.EdfReader(path_to_temperature)
         self.temperature_values = self.temperature.readSignal(0)
-        self.temperature_frequency = self.temperature.samplefrequency(0)
+        self.temperature_frequency = 0.25  # self.temperature.samplefrequency(0)
         self.temperature_start_datetime = self.temperature.getStartdatetime()
         self.temperature_duration = self.temperature.getFileDuration()
-        self.temperature_endtime = self.temperature_start_datetime + datetime.timedelta(
+
+        self.temperature_endtime = self.temperature_start_datetime + dt.timedelta(
             seconds=len(self.temperature_values) / self.temperature_frequency)
         self.temperature_timestamps = np.asarray(
-            pd.date_range(self.temperature_start_datetime, self.temperature_endtime, periods=len(self.temperature_values)))
+            pd.date_range(self.temperature_start_datetime, self.temperature_endtime,
+                          periods=len(self.temperature_values)))
 
         if self.subject_id is None or self.subject_id == os.path.basename(path_to_temperature).split("_")[-1][:-4]:
             self.subject_id = os.path.basename(path_to_temperature).split("_")[-1][:-4]
@@ -141,8 +142,10 @@ class SensorScripts:
         self.light_frequency = self.light.samplefrequency(0)
         self.light_start_datetime = self.light.getStartdatetime()
         self.light_duration = self.light.getFileDuration()
-        self.light_endtime = self.light_start_datetime + datetime.timedelta(seconds=len(self.light_values) / self.light_frequency)
-        self.light_timestamps = np.asarray(pd.date_range(self.light_start_datetime, self.light_endtime, periods=len(self.light_values)))
+        self.light_endtime = self.light_start_datetime + dt.timedelta(
+            seconds=len(self.light_values) / self.light_frequency)
+        self.light_timestamps = np.asarray(
+            pd.date_range(self.light_start_datetime, self.light_endtime, periods=len(self.light_values)))
 
         if self.subject_id is None or self.subject_id == os.path.basename(path_to_light).split("_")[-1][:-4]:
             self.subject_id = os.path.basename(path_to_light).split("_")[-1][:-4]
@@ -173,8 +176,10 @@ class SensorScripts:
         self.button_frequency = self.button.samplefrequency(0)
         self.button_start_datetime = self.button.getStartdatetime()
         self.button_duration = self.button.getFileDuration()
-        self.button_endtime = self.button_start_datetimen + datetime.timedelta(seconds=len(self.button_values) / self.button_frequency)
-        self.button_timestamps = np.asarray(pd.date_range(self.button_start_datetime, self.button_endtime, periods=len(self.button_values)))
+        self.button_endtime = self.button_start_datetimen + dt.timedelta(
+            seconds=len(self.button_values) / self.button_frequency)
+        self.button_timestamps = np.asarray(
+            pd.date_range(self.button_start_datetime, self.button_endtime, periods=len(self.button_values)))
 
         if self.subject_id is None or self.subject_id == os.path.basename(path_to_button).split("_")[-1][:-4]:
             self.subject_id = os.path.basename(path_to_button).split("_")[-1][:-4]
@@ -208,7 +213,6 @@ class SensorScripts:
 
         off_list = pd.to_datetime(off_list)
         on_list = pd.to_datetime(on_list)
-        self.log_nonwear_df = df
 
         return df
 
@@ -236,14 +240,13 @@ class SensorScripts:
              - Non-wear score: The count of axis std values less than 0.013
 
         '''
-
-        #  Vanhess nonwear calculation
+        pd.set_option('mode.chained_assignment', None)
 
         #  Create Endtime, timestamps and 15 min bin timestamps
-        end_time = self.accelerometer_start_datetime + datetime.timedelta(
+        end_time = self.accelerometer_start_datetime + dt.timedelta(
             seconds=len(self.x_values) / self.accelerometer_frequency)  # Currently Doing X values
         timestamps = np.asarray(pd.date_range(self.accelerometer_start_datetime, end_time, periods=len(self.x_values)))
-        bins_15 = pd.date_range(self.accelerometer_start_datetime + datetime.timedelta(minutes=22.5), end_time, freq='15min')
+        bins_15 = pd.date_range(self.accelerometer_start_datetime + dt.timedelta(minutes=22.5), end_time, freq='15min')
 
         data = {"x-axis": self.x_values,
                 "y-axis": self.y_values,
@@ -256,13 +259,14 @@ class SensorScripts:
         y_binned_std = []
         z_binned_std = []
         for n in range(len(bins_15) - 1):
-            binned_std = df.loc[(bins_15[n] - datetime.timedelta(minutes=22.5)):(bins_15[n + 1] + datetime.timedelta(minutes=22.5))].std()
+            binned_std = df.loc[
+                         (bins_15[n] - dt.timedelta(minutes=22.5)):(bins_15[n + 1] + dt.timedelta(minutes=22.5))].std()
             x_binned_std.append(binned_std[0])
             y_binned_std.append(binned_std[1])
             z_binned_std.append(binned_std[2])
 
-        binned_data = {"StartTime": bins_15[:-1],
-                       "EndTime": bins_15[1:],
+        binned_data = {"Start Time": bins_15[:-1],
+                       "End Time": bins_15[1:],
                        "x-std": x_binned_std,
                        "y-std": y_binned_std,
                        "z-std": z_binned_std}
@@ -280,113 +284,13 @@ class SensorScripts:
             return score
 
         binned_df["Non-wear score"] = binned_df.apply(nonwear_score, axis=1)
+        binned_df["Device Worn?"] = True
+        binned_df["Device Worn?"].loc[binned_df["Non-wear score"] >= 2] = False
 
-        self.vanhees_nonwear_df = binned_df
+        final_df = binned_df[['Start Time', 'End Time', 'Device Worn?']].copy()
+        final_df = final_df.set_index("Start Time")
 
-        return binned_df
-
-    def plot_nw_vs_log(self):
-        '''
-        To create a visual comparison of vanhees vs gold standard log data
-
-        Returns:
-            a plot of logged nonwear values in blue and vanhees nonwear values in red overlayed on subplots with non-wear scores, axis values and temperature values
-
-        Notes:
-            Must have read into the class the accelerometer EDF and the log data.
-            TODO: Must add error messages if accelerometer/logs aren't initiated
-
-        Example:
-            s = SensorScripts()
-
-            accelerometer_path = "accelerometer/path/name.EDF"
-            temperature_path = "temperature/path/name.EDF"
-            log_path = "log/path/name.xlsx"
-            s.read_accelerometer(accelerometer_path)
-            s.read_temperature(temperature_path)
-            s.read_nonwear_log(log_path)
-
-            s.plot_vanhees_vs_log()
-
-
-        '''
-
-        # endtime and timestamps
-        end_time = self.accelerometer_start_datetime + datetime.timedelta(
-            seconds=len(self.x_values) / self.accelerometer_frequency)  # Currently Doing X values
-        timestamps = np.asarray(pd.date_range(self.accelerometer_start_datetime, end_time, periods=len(self.x_values)))
-
-        #  Vanhess nonwear calculation
-        binned_df = self.vanhees_nonwear()
-
-        vh_nw_starts = binned_df["StartTime"].loc[binned_df["Non-wear score"] >= 2].to_numpy()
-        vh_nw_ends = binned_df["EndTime"].loc[binned_df["Non-wear score"] >= 2].to_numpy()
-
-        # Set up subplot
-        fig, (ax1, ax2, ax3) = plt.subplots(3, 1, sharex=True, gridspec_kw={'height_ratios': [1, 3, 3]})
-        xfmt = mdates.DateFormatter("%c")
-        locator = mdates.HourLocator(byhour=[0, 6, 12, 18, 24], interval=1)
-        plt.xticks(rotation=45, fontsize=6)
-        plt.sca(ax1)
-        plt.yticks([0, 1, 2, 3])
-
-        # Subplot 1 (Non-wear Score)
-        ax1.plot(binned_df["StartTime"], binned_df["Non-wear score"], color="black", label="Non-wear score")
-        ax1.xaxis.set_major_formatter(xfmt)
-        ax1.xaxis.set_major_locator(locator)
-        ax1.set_title("Red = Vanhees, Green = Huberty (In progress), Blue = Log (Gold Standard)")
-
-        # Subplot 2 (Accelerometer)
-        ax2.plot(timestamps, self.x_values, color='purple', label="x")
-        ax2.plot(timestamps, self.y_values, color='blue', label="y")
-        ax2.plot(timestamps, self.z_values, color='black', label="z")
-        ax2.legend(loc='upper left')
-        ax2.set_ylabel("G")
-        ax2.xaxis.set_major_formatter(xfmt)
-        ax2.xaxis.set_major_locator(locator)
-
-        # Subplot 3 (Temperature)
-        timestamps_temperature = np.asarray(pd.date_range(self.temperature_start_datetime, end_time, periods=len(self.temperature_values)))
-        ax3.plot(timestamps_temperature, self.temperature_values, color='black', label="Temperature")
-        ax3.legend(loc="upper left")
-        ax3.xaxis.set_major_formatter(xfmt)
-        ax3.xaxis.set_major_locator(locator)
-
-        # Logged NW times:
-        logged_nw_df = self.log_nonwear_df
-        logged_nw_starts = logged_nw_df["Off"]
-        logged_nw_ends = logged_nw_df["On"]
-
-        # Huberty NW Times
-        huberty_df = self.huberty_nonwear()
-        huberty_nw_starts = huberty_df["Time stamps start"].loc[huberty_df["60 minutes?"] == 1].to_numpy()
-        huberty_nw_ends = huberty_df["Time stamps end"].loc[huberty_df["60 minutes?"] == 1].to_numpy()
-
-        # fill non-wear times
-        try:
-            for start, end in zip(vh_nw_starts, vh_nw_ends):
-                ax1.fill_between(x=[start, end], y1=2.1, y2=3, color='red', alpha=0.60, linewidth=0.0)
-                ax2.fill_between(x=[start, end], y1=2.75, y2=8, color='red', alpha=0.60, linewidth=0.0)
-                ax3.fill_between(x=[start, end], y1=np.min(self.temperature_values)+(np.max(self.temperature_values)-np.min(self.temperature_values))*2/3+0.5,
-                                 y2=np.max(self.temperature_values), color='red', alpha=0.60, linewidth=0.0)
-
-            for start, end in zip(huberty_nw_starts, huberty_nw_ends):
-                ax1.fill_between(x=[start, end], y1=1.1, y2=1.9, color='green', alpha=0.60, linewidth=0.0)
-                ax2.fill_between(x=[start, end], y1=-2.50, y2=2.6, color='green', alpha=0.60, linewidth=0.0)
-                ax3.fill_between(x=[start, end], y1=np.min(self.temperature_values)+(np.max(self.temperature_values)-np.min(self.temperature_values))/3+0.5,
-                                 y2=np.min(self.temperature_values)+(np.max(self.temperature_values)-np.min(self.temperature_values))*2/3-0.5, color='green', alpha=0.60, linewidth=0.0)
-
-            for start, end in zip(logged_nw_starts, logged_nw_ends):
-                ax1.fill_between(x=[start, end], y1=0, y2=0.9, color='blue', alpha=0.60, linewidth=0.0)
-                ax2.fill_between(x=[start, end], y1=-8, y2=-2.70, color='blue', alpha=0.60, linewidth=0.0)
-                ax3.fill_between(x=[start, end], y1=np.min(self.temperature_values),
-                                 y2=np.min(self.temperature_values)+(np.max(self.temperature_values)-np.min(self.temperature_values))/3-0.5, color='blue', alpha=0.60,
-                                 linewidth=0.0)
-
-        except (IndexError, AttributeError):
-            pass
-
-        plt.show()
+        return final_df
 
     def huberty_nonwear(self):
         '''
@@ -394,14 +298,20 @@ class SensorScripts:
 
         Returns:
             A dataframe with the epoched sums, epoched std and a boolean column that states whether it is less than 0.05
+
+        Notes:
+            Original huberty algorithm removes sleep periods before running non-wear
         '''
+        pd.set_option('mode.chained_assignment', None)
         len_40hz = int(len(self.x_values) * (40 / self.accelerometer_frequency))
         x_values_40hz = signal.resample(self.x_values, len_40hz)
         y_values_40hz = signal.resample(self.y_values, len_40hz)
         z_values_40hz = signal.resample(self.z_values, len_40hz)
 
-        timestamps_1s_start = pd.date_range(self.accelerometer_start_datetime,end = self.accelerometer_endtime-datetime.timedelta(minutes=1), freq = "T")
+        timestamps_1s_start = pd.date_range(self.accelerometer_start_datetime,
+                                            end=self.accelerometer_endtime - dt.timedelta(minutes=1), freq="T")
         timestamps_1s_end = timestamps_1s_start.shift(1)
+
         def epoch_accel(x, y, z, epoch_len, frequency):
             epoch_len = epoch_len
             epoched_means = []
@@ -427,10 +337,81 @@ class SensorScripts:
             epoched_std.append(None)
         epoched_std = np.array(epoched_std)
 
-        df = pd.DataFrame({"Time stamps start":timestamps_1s_start,"Time stamps end":timestamps_1s_end,"Epoched Means": epoched_means, "Epoched Std": epoched_std})
+        df = pd.DataFrame(
+            {"Start Time": timestamps_1s_start, "End Time": timestamps_1s_end, "Epoched Means": epoched_means,
+             "Epoched Std": epoched_std})
         df["Less than 0.05"] = False
         df.loc[df["Epoched Std"] <= 0.05, "Less than 0.05"] = True
-        df["60 minutes?"] = False
-        df.loc[df["Less than 0.05"].rolling(60).sum() == 60,"60 minutes?"] = True
+        df["Device Worn?"] = True
+        df["less than 0.05 consecutive count"] = df["Less than 0.05"] * (df["Less than 0.05"].groupby((df["Less than 0.05"] != df["Less than 0.05"].shift()).cumsum()).cumcount() + 1)
+        df.loc[df["less than 0.05 consecutive count"] >= 60, "Device Worn?"] = False
+        for n in df["less than 0.05 consecutive count"].loc[df["less than 0.05 consecutive count"]==60].index:
+            df["Device Worn?"].iloc[n-60:n] = False
 
-        return df
+        #df.loc[df["Less than 0.05"].rolling(60).sum() == 60, "Device Worn?"] = False
+        #return df
+        final_df = df[['Start Time', 'End Time', 'Device Worn?']].copy()
+        final_df = final_df.set_index('Start Time')
+
+        return final_df
+
+    def zhou_nonwear(self):
+
+        '''Note that we are using a forward moving window of 4s since that is how often we get temperature results. The
+        original study by Zhou used 1s '''
+        # Zhou Non-wear
+
+        temp_thresh = 26
+        window_size = 60  # seconds
+
+        # Temperature
+        pd.set_option('mode.chained_assignment', None)
+        zhou_df = pd.DataFrame({"Temperature Timestamps": self.temperature_timestamps,
+                                "Raw Temperature Values": self.temperature_values})
+
+        temperature_moving_average = pd.Series(self.temperature_values).rolling(
+            int(60 * self.temperature_frequency)).mean()
+        t0 = 26
+
+        # Accelerometer
+
+        zhou_accelerometer_df = pd.DataFrame({"X": self.x_values, "Y": self.y_values, "Z": self.z_values},
+                                             index=self.accelerometer_timestamps)
+        zhou_accelerometer_rolling_std = zhou_accelerometer_df.rolling(int(60 * self.accelerometer_frequency)).std()
+        binned_4s_df = zhou_accelerometer_rolling_std.iloc[::int(4 * self.accelerometer_frequency), :]
+        y = zhou_accelerometer_rolling_std.iloc[:6000]
+
+        # Combined
+        temp_moving_average_list = list(temperature_moving_average.values)
+        if len(temp_moving_average_list) - len(binned_4s_df) > 0:
+           temp_moving_average_list = temp_moving_average_list[:len(binned_4s_df) - len(temp_moving_average_list)]
+
+        binned_4s_df["Temperature Moving Average"] = temp_moving_average_list
+
+        # Zhou Algorithm
+
+        worn = []
+        end_times = []
+        for index, row in binned_4s_df.iterrows():
+            end_times.append(index + dt.timedelta(seconds=4))
+            if (row["Temperature Moving Average"] < t0) and (((row["X"] + row["Y"] + row["Z"]) / 3) < 0.013):
+                worn.append(False)
+            elif row["Temperature Moving Average"] >= t0:
+                worn.append(True)
+            else:
+                earlier_window_temp = binned_4s_df["Temperature Moving Average"].shift(15).loc[index]
+                if row["Temperature Moving Average"] > earlier_window_temp:
+                    worn.append(True)
+                elif row["Temperature Moving Average"] < earlier_window_temp:
+                    worn.append(False)
+                elif row["Temperature Moving Average"] == earlier_window_temp:
+                    worn.append(worn[-1])
+                else:
+                    worn.append(True)
+
+        binned_4s_df["Device Worn?"] = worn
+        binned_4s_df["End Time"] = end_times
+
+        final_df = binned_4s_df[['End Time', 'Device Worn?']].copy()
+
+        return final_df
