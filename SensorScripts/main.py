@@ -418,7 +418,10 @@ class SensorScripts:
                 else:
                     not_worn.append(False)
 
-        binned_4s_df["Bin not worn?"] = not_worn
+        binned_4s_df["Bin Not Worn?"] = not_worn
+        binned_4s_df["Bin Worn Consecutive Count"] = binned_4s_df["Bin Not Worn?"] * (binned_4s_df["Bin Not Worn?"].groupby((binned_4s_df["Bin Not Worn?"] != binned_4s_df["Bin Not Worn?"].shift()).cumsum()).cumcount() + 1)
+
+
         binned_4s_df["Device Worn?"] = True
         binned_4s_df["Device Worn?"].loc[binned_4s_df["Bin Worn Consecutive Count"] >= minimum_window_size / (4/60)] = False
         binned_4s_df["End Time"] = end_times
