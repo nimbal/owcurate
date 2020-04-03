@@ -226,9 +226,13 @@ class SensorScripts:
 
         print(df.loc[:, :5])
 
-    def vanhees_nonwear(self):
+    def vanhees_nonwear(self,minimum_window_size = 60, bin_size = 15):
         '''
         Calculated non-wear scores based on the GGIR algorithm created by Vanhees
+
+        Args:
+            minimum_window_size:
+            bin_size:
 
         Returns:
             A dataframe with columns:
@@ -241,12 +245,14 @@ class SensorScripts:
 
         '''
         pd.set_option('mode.chained_assignment', None)
-
+        print("Starting Vanhees Calculation...")
+        print("Bin size =", bin_size)
+        print("Window size =", minimum_window_size)
         #  Create Endtime, timestamps and 15 min bin timestamps
         end_time = self.accelerometer_start_datetime + dt.timedelta(
             seconds=len(self.x_values) / self.accelerometer_frequency)  # Currently Doing X values
         timestamps = np.asarray(pd.date_range(self.accelerometer_start_datetime, end_time, periods=len(self.x_values)))
-        bins_15 = pd.date_range(self.accelerometer_start_datetime + dt.timedelta(minutes=22.5), end_time, freq='15min')
+        bins = pd.date_range(self.accelerometer_start_datetime, end_time, freq='%smin' % bin_size)
 
         data = {"x-axis": self.x_values,
                 "y-axis": self.y_values,
@@ -258,15 +264,14 @@ class SensorScripts:
         x_binned_std = []
         y_binned_std = []
         z_binned_std = []
-        for n in range(len(bins_15) - 1):
-            binned_std = df.loc[
-                         (bins_15[n] - dt.timedelta(minutes=22.5)):(bins_15[n + 1] + dt.timedelta(minutes=22.5))].std()
+        for n in range(len(bins) - 1):
+            binned_std = df.loc[bins[n]:bins[n + 1]].std()
             x_binned_std.append(binned_std[0])
             y_binned_std.append(binned_std[1])
             z_binned_std.append(binned_std[2])
 
-        binned_data = {"Start Time": bins_15[:-1],
-                       "End Time": bins_15[1:],
+        binned_data = {"Start Time": bins[:-1],
+                       "End Time": bins[1:],
                        "x-std": x_binned_std,
                        "y-std": y_binned_std,
                        "z-std": z_binned_std}
@@ -284,8 +289,13 @@ class SensorScripts:
             return score
 
         binned_df["Non-wear score"] = binned_df.apply(nonwear_score, axis=1)
+        binned_df["Bin Not Worn?"] = False
+        binned_df["Bin Not Worn?"].loc[binned_df["Non-wear score"] >= 2] = True
+
+        binned_df["Bin Worn Consecutive Count"] = binned_df["Bin Not Worn?"] * (binned_df["Bin Not Worn?"].groupby((binned_df["Bin Not Worn?"] != binned_df["Bin Not Worn?"].shift()).cumsum()).cumcount() + 1)
+
         binned_df["Device Worn?"] = True
-        binned_df["Device Worn?"].loc[binned_df["Non-wear score"] >= 2] = False
+        binned_df["Device Worn?"].loc[binned_df["Bin Worn Consecutive Count"] >= minimum_window_size/bin_size] = False
 
         final_df = binned_df[['Start Time', 'End Time', 'Device Worn?']].copy()
         final_df = final_df.set_index("Start Time")
@@ -355,7 +365,7 @@ class SensorScripts:
 
         return final_df
 
-    def zhou_nonwear(self):
+    def zhou_nonwear(self, minimum_window_size = 15, t0 = 26):
 
         '''Note that we are using a forward moving window of 4s since that is how often we get temperature results. The
         original study by Zhou used 1s '''
@@ -371,7 +381,6 @@ class SensorScripts:
 
         temperature_moving_average = pd.Series(self.temperature_values).rolling(
             int(60 * self.temperature_frequency)).mean()
-        t0 = 26
 
         # Accelerometer
 
@@ -390,26 +399,28 @@ class SensorScripts:
 
         # Zhou Algorithm
 
-        worn = []
+        not_worn = []
         end_times = []
         for index, row in binned_4s_df.iterrows():
             end_times.append(index + dt.timedelta(seconds=4))
             if (row["Temperature Moving Average"] < t0) and (((row["X"] + row["Y"] + row["Z"]) / 3) < 0.013):
-                worn.append(False)
+                not_worn.append(True)
             elif row["Temperature Moving Average"] >= t0:
-                worn.append(True)
+                not_worn.append(False)
             else:
                 earlier_window_temp = binned_4s_df["Temperature Moving Average"].shift(15).loc[index]
                 if row["Temperature Moving Average"] > earlier_window_temp:
-                    worn.append(True)
+                    not_worn.append(False)
                 elif row["Temperature Moving Average"] < earlier_window_temp:
-                    worn.append(False)
+                    not_worn.append(True)
                 elif row["Temperature Moving Average"] == earlier_window_temp:
-                    worn.append(worn[-1])
+                    not_worn.append(not_worn[-1])
                 else:
-                    worn.append(True)
+                    not_worn.append(False)
 
-        binned_4s_df["Device Worn?"] = worn
+        binned_4s_df["Bin not worn?"] = not_worn
+        binned_4s_df["Device Worn?"] = True
+        binned_4s_df["Device Worn?"].loc[binned_4s_df["Bin Worn Consecutive Count"] >= minimum_window_size / (4/60)] = False
         binned_4s_df["End Time"] = end_times
 
         final_df = binned_4s_df[['End Time', 'Device Worn?']].copy()
