@@ -8,6 +8,7 @@ from file_naming import file_naming
 import pyedflib
 import datetime
 import os, sys
+import numpy as np
 import time
 
 # ======================================== FUNCTIONS ========================================
@@ -210,7 +211,7 @@ def ga_to_edf(input_file_path, accelerometer_dir, temperature_dir, light_dir, bu
         button_file.close()
         if not quiet: print("Seconds to make Button EDF:", time.time() - edf_start_time)
     if device_edf: device_ga_to_edf(geneactivfile, device_dir, quiet)
-
+    del geneactivfile
     if not quiet: print("EDF Conversion Complete.")
 
 #
@@ -297,4 +298,5 @@ def device_ga_to_edf(geneactivfile, device_output_dir, quiet=False):
     device_file.writeSamples(
         [geneactivfile.data['x'], geneactivfile.data['y'], geneactivfile.data['z'], geneactivfile.data['temperature'], geneactivfile.data["light"], geneactivfile.data["button"]])
     device_file.close()
+    del geneactivfile
     if not quiet: print("Seconds to make Device EDF:", time.time() - edf_start_time)
