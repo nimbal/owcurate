@@ -17,6 +17,12 @@ from scipy import signal
 class SensorScripts:
     '''
     The purpose of the SensorScripts class is to have the ability to easily access and analyze multiple sensor EDFs at the same time.
+
+    Examples:
+        To calculate the zhou nonwear algorithm you would do
+        s = SensorScripts()
+        s.read_accelerometer("Path/To/Accelerometer/file.edf")
+        s.zhou_nonwear()
     '''
 
     def __init__(self):
@@ -50,7 +56,7 @@ class SensorScripts:
         self.button_duration = None
         self.button_endtime = None
         self.button_timestamps = None
-        self.subject_id = None
+        self.subject_id = None # Comes from Accelerometer File
 
     def read_accelerometer(self, path_to_accelerometer):
         """
@@ -59,9 +65,22 @@ class SensorScripts:
         Args:
             path_to_accelerometer: full path to accelerometer EDF
 
+        Returns:
+            self.accelerometer: the pyedflib read file
+            self.x_values: all the data point values for the x axis
+            self.y_values: all the data point values for the y axis
+            self.z_values: all the data point values for the z axis
+            self.accelerometer_frequency: sample rate of accelerometer sensor
+            self.accelerometer_start_datetime: Start date and time of the recording
+            self.accelerometer_duration: Length of recording in seconds
+            self.accelerometer_endtime: End date and time of the recording
+            self.accelerometer_timestamps:The time stamps that correspond with each data point
+            self.subject_id: This only applies to edf's using the updated ga_to_edf conversion and only is relevant for studys with subject id's (OND05,OND07, STEPS etc...)
+
         """
+        print("Starting accelerometer reading...")
         if not os.path.exists(path_to_accelerometer):
-            print("ACCELEROMETER PATH NOT CORRECT, ACCELEROMETER NOT INITIALIZED")
+            raise Exception("ACCELEROMETER PATH NOT CORRECT, ACCELEROMETER NOT INITIALIZED")
             return
 
         self.accelerometer = pyedflib.EdfReader(path_to_accelerometer)
@@ -76,11 +95,7 @@ class SensorScripts:
         self.accelerometer_timestamps = np.asarray(
             pd.date_range(self.accelerometer_start_datetime, self.accelerometer_endtime,
                           periods=len(self.x_values)))  # Currently using X values
-
-        if self.subject_id is None or self.subject_id == os.path.basename(path_to_accelerometer).split("_")[-1][:-4]:
-            self.subject_id = os.path.basename(path_to_accelerometer).split("_")[-1][:-4]
-        else:
-            print("WARNING, SUBJECT ID'S DOES NOT MATCH")
+        self.subject_id = self.accelerometer.getPatientCode()[-4:]
 
         self.accelerometer.close()
 
@@ -96,9 +111,19 @@ class SensorScripts:
         Args:
             path_to_temperature: full path to temperature EDF
 
+        Returns:
+            self.temperature: the pyedflib read file
+            self.temperature_values: all the data point values for the temperature sensor
+            self.temperature_frequency: sample rate of temperature sensor (currently hard coded at 0.25)
+            self.temperature_start_datetime: Start date and time of the recording
+            self.temperature_duration: Length of recording in seconds
+            self.temperature_endtime: End date and time of the recording
+            self.temperature_timestamps:The time stamps that correspond with each data point
+
         """
+        print("Starting Temperature Reading...")
         if not os.path.exists(path_to_temperature):
-            print("TEMPERATURE PATH NOT CORRECT, TEMPERATURE NOT INITIALIZED")
+            raise Exception("TEMPERATURE PATH NOT CORRECT, TEMPERATURE NOT INITIALIZED")
             return
 
         self.temperature = pyedflib.EdfReader(path_to_temperature)
@@ -112,11 +137,7 @@ class SensorScripts:
         self.temperature_timestamps = np.asarray(
             pd.date_range(self.temperature_start_datetime, self.temperature_endtime,
                           periods=len(self.temperature_values)))
-
-        if self.subject_id is None or self.subject_id == os.path.basename(path_to_temperature).split("_")[-1][:-4]:
-            self.subject_id = os.path.basename(path_to_temperature).split("_")[-1][:-4]
-        else:
-            print("WARNING, SUBJECT ID'S DOES NOT MATCH")
+        #self.subject_id = self.temperature.getPatientCode()[-4:]
 
         self.temperature.close()
 
@@ -132,6 +153,14 @@ class SensorScripts:
         Args:
             path_to_light: full path to light EDF
 
+        Returns:
+            self.light: the pyedflib read file
+            self.light_values: all the data point values for the light sensor
+            self.light_frequency: sample rate of light sensor (currently hard coded at 0.25)
+            self.light_start_datetime: Start date and time of the recording
+            self.light_duration: Length of recording in seconds
+            self.light_endtime: End date and time of the recording
+            self.light_timestamps:The time stamps that correspond with each data point
         """
         if not os.path.exists(path_to_light):
             print("LIGHT PATH NOT CORRECT, LIGHT NOT INITIALIZED")
@@ -147,10 +176,7 @@ class SensorScripts:
         self.light_timestamps = np.asarray(
             pd.date_range(self.light_start_datetime, self.light_endtime, periods=len(self.light_values)))
 
-        if self.subject_id is None or self.subject_id == os.path.basename(path_to_light).split("_")[-1][:-4]:
-            self.subject_id = os.path.basename(path_to_light).split("_")[-1][:-4]
-        else:
-            print("WARNING, SUBJECT ID'S DOES NOT MATCH")
+        #self.subject_id = self.light.getPatientCode()[-4:]
 
         self.light.close()
 
@@ -166,6 +192,14 @@ class SensorScripts:
         Args:
             path_to_button: full path to button EDF
 
+        Returns:
+            self.button: the pyedflib read file
+            self.button_values: all the data point values for the button sensor
+            self.button_frequency: sample rate of button sensor (currently hard coded at 0.25)
+            self.button_start_datetime: Start date and time of the recording
+            self.button_duration: Length of recording in seconds
+            self.button_endtime: End date and time of the recording
+            self.button_timestamps:The time stamps that correspond with each data point
         """
         if not os.path.exists(path_to_button):
             print("BUTTON PATH NOT CORRECT, BUTTON NOT INITIALIZED")
@@ -181,10 +215,7 @@ class SensorScripts:
         self.button_timestamps = np.asarray(
             pd.date_range(self.button_start_datetime, self.button_endtime, periods=len(self.button_values)))
 
-        if self.subject_id is None or self.subject_id == os.path.basename(path_to_button).split("_")[-1][:-4]:
-            self.subject_id = os.path.basename(path_to_button).split("_")[-1][:-4]
-        else:
-            print("WARNING, SUBJECT ID'S DOES NOT MATCH")
+        #self.subject_id = self.button.getPatientCode()[-4:]
 
         self.button.close()
 
@@ -197,7 +228,7 @@ class SensorScripts:
         """
         Created by Chris Wong
 
-        Reads self reported nonwear logs saved in xlsx format
+        Reads self reported nonwear logs for 5 day tests done with the NiMBaL staff saved in xlsx format.
 
 
         Returns:
@@ -211,91 +242,132 @@ class SensorScripts:
         on_list = df['On']
         structured_removal_list = df['Structured Removal']
 
-        off_list = pd.to_datetime(off_list)
-        on_list = pd.to_datetime(on_list)
-
         return df
 
-    def read_OND07_nonwear_log(self):
+    @staticmethod
+    def read_OND07_nonwear_log():
         """
 
         Returns:
-            df of OND07 nonwear log times for the subject ID in in self.subject_id
+            df of OND07 nonwear log times for non-dominant wrists of all participants
+                - column names:
+                    - ID
+                    - DEVICE OFF
+                    - DEVICE ON
+                    - ENDCOLLECTION
+                    - HANDEDNESS
+        Notes:
+            - Must have access to the NiMBaL drive
+            - The time stamps have been updated to better reflect the non-wear time by Kyle Weber through visual inspection
         """
-        df = pd.read_excel(r"O:\Data\OND07\Raw data\Tables\Sensor_Removal_Log_Data.xlsx", usecols="A:M")
+        logs_df = pd.read_excel(r"O:\Data\OND07\Raw data\Tables\Nondominant_NonwearLog.xlsx")  # Read non-wear logs into a dataframe
+        logs_df["DEVICE OFF"] = pd.to_datetime(logs_df["DEVICE OFF"], format="%Y%b%d %H:%M")
+        logs_df["DEVICE ON"] = pd.to_datetime(logs_df["DEVICE ON"], format="%Y%b%d %H:%M")
+        return logs_df
 
-        print(df.loc[:, :5])
-
-    def vanhees_nonwear(self,minimum_window_size = 60, bin_size = 15):
+    def vanhees_nonwear(self, min_number_bins = 1,bin_size = 15):
         '''
         Calculated non-wear scores based on the GGIR algorithm created by Vanhees
+        https://cran.r-project.org/web/packages/GGIR/vignettes/GGIR.html#non-wear-detection
+        https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0061691
+
 
         Args:
-            minimum_window_size:
-            bin_size:
+            min_number_bins: The number of consecutive bins needed for the bout to be considered valid non-wear
+            bin_size: the size of the bin in minutes
+
+        Notes:
+            the window is 4x the bin size, so if the bin is 15 mins, the window that has to meet the criteria is 15*4 = 60 mins
 
         Returns:
             A dataframe with columns:
-             - StartTime: The start time of the 15 minute bin
-             - EndTime: The end time of the 15 minute bin
-             - x-std
-             - y-std
-             - z-std
-             - Non-wear score: The count of axis std values less than 0.013
+            - StartTime (Index): The start time of the bin
+            - End Time: The end time of the bin
+            - Device Worn?: Indicates whether worn (1) or not worn (0) during that bin according the the algorithm
+
 
         '''
         pd.set_option('mode.chained_assignment', None)
         print("Starting Vanhees Calculation...")
         print("Bin size =", bin_size)
-        print("Window size =", minimum_window_size)
-        #  Create Endtime, timestamps and 15 min bin timestamps
-        end_time = self.accelerometer_start_datetime + dt.timedelta(
-            seconds=len(self.x_values) / self.accelerometer_frequency)  # Currently Doing X values
-        timestamps = np.asarray(pd.date_range(self.accelerometer_start_datetime, end_time, periods=len(self.x_values)))
-        bins = pd.date_range(self.accelerometer_start_datetime, end_time, freq='%smin' % bin_size)
+        print("Min Number of Bins =", min_number_bins)
 
+        #  Create Bins
+
+        bins = pd.date_range(self.accelerometer_start_datetime, self.accelerometer_endtime, freq='%smin' % bin_size)
+
+        # Create Dataframe with all the raw data in it with their respective timestamps as
         data = {"x-axis": self.x_values,
                 "y-axis": self.y_values,
                 "z-axis": self.z_values,
-                "TimeStamps": timestamps}
+                "TimeStamps": self.accelerometer_timestamps}
         df = pd.DataFrame(data)
         df = df.set_index("TimeStamps")
 
+
+        # Calculate STD and range of values in each bin
         x_binned_std = []
         y_binned_std = []
         z_binned_std = []
+
+        x_binned_range = []
+        y_binned_range = []
+        z_binned_range = []
+
         for n in range(len(bins) - 1):
-            binned_std = df.loc[bins[n]:bins[n + 1]].std()
+            binned_std = df.loc[bins[n]-dt.timedelta(minutes = (3/2)*bin_size):bins[n+1]+dt.timedelta(minutes = (3/2)*bin_size)].std() # Look at non-wear paper method notes to understand this line
             x_binned_std.append(binned_std[0])
             y_binned_std.append(binned_std[1])
             z_binned_std.append(binned_std[2])
+
+            binned_range = df.loc[bins[n]-dt.timedelta(minutes = (3/2)*bin_size):bins[n+1]+dt.timedelta(minutes = (3/2)*bin_size)] # Look at non-wear paper method notes to understand this line
+            x_binned_range.append(abs(max(binned_range["x-axis"])- min(binned_range["x-axis"])))
+            y_binned_range.append(abs(max(binned_range["y-axis"])- min(binned_range["y-axis"])))
+            z_binned_range.append(abs(max(binned_range["z-axis"])- min(binned_range["z-axis"])))
 
         binned_data = {"Start Time": bins[:-1],
                        "End Time": bins[1:],
                        "x-std": x_binned_std,
                        "y-std": y_binned_std,
-                       "z-std": z_binned_std}
+                       "z-std": z_binned_std,
+                       "x-range":x_binned_range,
+                       "y-range":y_binned_range,
+                       "z-range":z_binned_range}
 
         binned_df = pd.DataFrame(binned_data)
 
         def nonwear_score(row):
-            score = 0
-            if row["x-std"] < 0.013:
-                score += 1
+            std_score = 0
+            if row["x-std"] < 0.013 :
+                std_score += 1
             if row["y-std"] < 0.013:
-                score += 1
+                std_score += 1
             if row["z-std"] < 0.013:
-                score += 1
-            return score
+                std_score += 1
 
-        binned_df["Non-wear score"] = binned_df.apply(nonwear_score, axis=1)
+            value_range_score = 0
+            if row["x-range"] < 0.05:
+                value_range_score +=1
+            if row["y-range"] < 0.05:
+                value_range_score +=1
+            if row["z-range"] < 0.05:
+                value_range_score +=1
+
+            print(std_score,value_range_score)
+
+
+            return std_score
+        #def window_sum(row):
+
+
+        binned_df["Non-wear score"] = binned_df.apply(nonwear_score, axis=1) # This applies the nonwear_score function for every row in the dataframe
         binned_df["Bin Not Worn?"] = False
         binned_df["Bin Not Worn?"].loc[binned_df["Non-wear score"] >= 2] = True
 
         binned_df["Bin Worn Consecutive Count"] = binned_df["Bin Not Worn?"] * (binned_df["Bin Not Worn?"].groupby((binned_df["Bin Not Worn?"] != binned_df["Bin Not Worn?"].shift()).cumsum()).cumcount() + 1)
 
         binned_df["Device Worn?"] = True
-        binned_df["Device Worn?"].loc[binned_df["Bin Worn Consecutive Count"] >= minimum_window_size/bin_size] = False
+        binned_df["Device Worn?"].loc[binned_df["Bin Worn Consecutive Count"] >= min_number_bins] = False
 
         final_df = binned_df[['Start Time', 'End Time', 'Device Worn?']].copy()
         final_df = final_df.set_index("Start Time")
@@ -304,6 +376,8 @@ class SensorScripts:
 
     def huberty_nonwear(self):
         '''
+        INCOMPLETE, DO NOT USE.
+
         Calculates non-wear periods based on Huberty algorithm
 
         Returns:
@@ -365,14 +439,28 @@ class SensorScripts:
 
         return final_df
 
-    def zhou_nonwear(self, minimum_window_size = 15, t0 = 26):
+    def zhou_nonwear(self, min_number_4sbins = 1, t0 = 26):
 
-        '''Note that we are using a forward moving window of 4s since that is how often we get temperature results. The
-        original study by Zhou used 1s '''
-        # Zhou Non-wear
+        '''
+        Calculated non-wear results based on the algorithm created by Shang-Ming Zhou
+        https://bmjopen.bmj.com/content/5/5/e007447
 
-        temp_thresh = 26
-        window_size = 60  # seconds
+
+        Args:
+            min_number_4sbins: The number of consecutive 4 second bins needed for the bout to be considered valid non-wear
+            t0: The threshold at which temp has to be below to be considered valid nonwear
+
+        Notes:
+            we are using a forward moving window of 4s since that is how often we get temperature results. The original study by Zhou used 1s
+
+        Returns:
+            A dataframe with columnsdasdss
+            StartTime (Index) The start time of the bin
+            - End Time -> The end time of the bin
+            - Device Worn? -> Indicates whether worn (1) or not worn (0) during that bin according the the algorithm
+         '''
+
+
 
         # Temperature
         pd.set_option('mode.chained_assignment', None)
@@ -388,12 +476,15 @@ class SensorScripts:
                                              index=self.accelerometer_timestamps)
         zhou_accelerometer_rolling_std = zhou_accelerometer_df.rolling(int(60 * self.accelerometer_frequency)).std()
         binned_4s_df = zhou_accelerometer_rolling_std.iloc[::int(4 * self.accelerometer_frequency), :]
-        y = zhou_accelerometer_rolling_std.iloc[:6000]
 
         # Combined
         temp_moving_average_list = list(temperature_moving_average.values)
-        if len(temp_moving_average_list) - len(binned_4s_df) > 0:
-           temp_moving_average_list = temp_moving_average_list[:len(binned_4s_df) - len(temp_moving_average_list)]
+        if len(temp_moving_average_list) > len(binned_4s_df):
+            temp_moving_average_list = temp_moving_average_list[:len(binned_4s_df)]
+        if len(temp_moving_average_list) < len(binned_4s_df):
+            temp_moving_average_list.append(0)
+        print("LENGTH Temp list:", len(temp_moving_average_list))
+        print("LENGTH BINNED 4s DF:", len(binned_4s_df))
 
         binned_4s_df["Temperature Moving Average"] = temp_moving_average_list
 
@@ -408,7 +499,7 @@ class SensorScripts:
             elif row["Temperature Moving Average"] >= t0:
                 not_worn.append(False)
             else:
-                earlier_window_temp = binned_4s_df["Temperature Moving Average"].shift(15).loc[index]
+                earlier_window_temp = binned_4s_df["Temperature Moving Average"].shift(int(60 * self.temperature_frequency)).loc[index]
                 if row["Temperature Moving Average"] > earlier_window_temp:
                     not_worn.append(False)
                 elif row["Temperature Moving Average"] < earlier_window_temp:
@@ -423,7 +514,7 @@ class SensorScripts:
 
 
         binned_4s_df["Device Worn?"] = True
-        binned_4s_df["Device Worn?"].loc[binned_4s_df["Bin Worn Consecutive Count"] >= minimum_window_size / (4/60)] = False
+        binned_4s_df["Device Worn?"].loc[binned_4s_df["Bin Worn Consecutive Count"] >= min_number_4sbins] = False
         binned_4s_df["End Time"] = end_times
 
         final_df = binned_4s_df[['End Time', 'Device Worn?']].copy()
