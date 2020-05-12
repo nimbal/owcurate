@@ -105,7 +105,7 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
         for x in new_files:
             if not quiet: print("--------------------------------------------------------------------------------------------------------------------")
             if not quiet: print("Converting " + x + ".bin...")
-            ga_to_edf(input_dir + "\\" + x + ".bin", accelerometer_dir, temperature_dir, light_dir, button_dir, device_dir, device_edf,
+            ga_to_edf(os.path.join(input_dir, x + ".bin"), accelerometer_dir, temperature_dir, light_dir, button_dir, device_dir, device_edf,
                       correct_drift=correct_drift, quiet=quiet)
 
     if overwrite:
@@ -118,7 +118,7 @@ def folder_convert(input_dir, output_dir, device_edf=False, correct_drift=True, 
         for x in input_files:
             if not quiet: print("--------------------------------------------------------------------------------------------------------------------")
             if not quiet: print("Converting " + x + ".bin...")
-            ga_to_edf(input_dir + "\\" + x + ".bin", accelerometer_dir, temperature_dir, light_dir, button_dir, device_dir, device_edf,
+            ga_to_edf(os.path.join(input_dir, x + ".bin"), accelerometer_dir, temperature_dir, light_dir, button_dir, device_dir, device_edf,
                       correct_drift=correct_drift, quiet=quiet)
 
     if not quiet: print("Conversion Complete")
