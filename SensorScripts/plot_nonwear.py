@@ -17,8 +17,8 @@ Returns:
 
 s = SensorScripts()
 subject_id = 1039
-accel_path = r"E:\nimbal\data\OND06_processed_%d\Accelerometer\DATAFILES\OND06_SBH_%d_A_SE01_GABL_GENEActiv_Accelerometer_LA.edf" % (subject_id, subject_id)
-temp_path = r"E:\nimbal\data\OND06_processed_%d\Temperature\DATAFILES\OND06_SBH_%d_A_SE01_GABL_GENEActiv_Temperature_LA.edf" % (subject_id, subject_id)
+accel_path = r"E:\nimbal\data\OND06_processed_%d\Accelerometer\DATAFILES\OND06_SBH_%d_A_SE01_GABL_GENEActiv_Accelerometer_LW.edf" % (subject_id, subject_id)
+temp_path = r"E:\nimbal\data\OND06_processed_%d\Temperature\DATAFILES\OND06_SBH_%d_A_SE01_GABL_GENEActiv_Temperature_LW.edf" % (subject_id, subject_id)
 s.read_accelerometer(accel_path)
 s.read_temperature(temp_path)
 
@@ -43,9 +43,8 @@ plt.xticks(rotation=45, fontsize=6)
 plt.sca(ax1)
 
 # Subplot 1 (Accelerometer)
-ax1.plot(timestamps, s.x_values, color='purple', label="x")
-ax1.plot(timestamps, s.y_values, color='blue', label="y")
-ax1.plot(timestamps, s.z_values, color='black', label="z")
+epoch_accel = np.sqrt(s.x_values**2 + s.y_values**2 + s.z_values**2) - 1
+ax1.plot(timestamps, epoch_accel, color='purple', label="epoched accel")
 ax1.legend(loc='upper left')
 ax1.set_ylabel("G")
 ax1.xaxis.set_major_formatter(xfmt)
@@ -62,7 +61,7 @@ ax2.xaxis.set_major_formatter(xfmt)
 ax2.xaxis.set_major_locator(locator)
 
 # Logged NW times:
-logged_nw_df = s.read_OND07_nonwear_log(path=r"E:\\nimbal\\data\\non-wear_data\\Nondominant_NonwearLog.xlsx")
+logged_nw_df = s.read_OND06_nonwear_log(path=r"E:\\nimbal\\data\\non-wear_data\\Sensor_Removal_Log_Data.xlsx")
 logged_nw_subject_df = logged_nw_df.loc[logged_nw_df["ID"] == subject_id]
 logged_nw_starts = logged_nw_subject_df["DEVICE OFF"]
 logged_nw_ends = logged_nw_subject_df["DEVICE ON"]
@@ -94,6 +93,14 @@ try:
                          y2=np.max(s.temperature_values) - (
                     np.max(s.temperature_values) - np.min(s.temperature_values)) /3 - 0.5,
                          color='orange', alpha=0.60, linewidth=0.0)
+    for start, end in zip(logged_nw_starts, logged_nw_ends):
+        if end < start:
+            #temporary fix
+            end += dt.timedelta(days=1)
+        if not (pd.isnull(start) or pd.isnull(end)):
+            ax1.fill_between(x=[start, end], y1=-8, y2=-3, color='blue', alpha=0.60, linewidth=0.0)
+            ax2.fill_between(x=[start, end], y1=np.min(s.temperature_values),y2=np.max(s.temperature_values) - (
+                        np.max(s.temperature_values) - np.min(s.temperature_values))*2 /3 - 0.5,color='blue', alpha=0.60,linewidth=0.0)
 except (IndexError, AttributeError):
     pass
 

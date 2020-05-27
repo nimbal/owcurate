@@ -267,9 +267,11 @@ class SensorScripts:
 
     @staticmethod
     def read_OND06_nonwear_log(path):
+        # TODO: make it be able to recognize the sensor
         logs_df = pd.read_excel(path)  # Read non-wear logs into a dataframe
-        logs_df["DEVICE OFF"] = pd.to_datetime(logs_df["DEVICE OFF"], format="%Y%b%d %H:%M")
-        logs_df["DEVICE ON"] = pd.to_datetime(logs_df["DEVICE ON"], format="%Y%b%d %H:%M")
+        logs_df["ID"] = logs_df["SUBJECT"]
+        logs_df["DEVICE OFF"] = logs_df.apply(lambda r : pd.to_datetime(str(r['DATE']) +' '+str(r['TIME_REMOVED']),format="%Y%b%d %H:%M:%S", errors='coerce'), axis=1)
+        logs_df["DEVICE ON"] = logs_df.apply(lambda r : pd.to_datetime(str(r['DATE']) +' '+str(r['TIME_REATTACHED']),format="%Y%b%d %H:%M:%S", errors='coerce'), axis=1)
         return logs_df
 
     def vanhees_nonwear(self, min_number_bins = 1,bin_size = 15):
@@ -359,9 +361,6 @@ class SensorScripts:
                 value_range_score +=1
             if row["z-range"] < 0.05:
                 value_range_score +=1
-
-            print(std_score,value_range_score)
-
 
             return std_score
         #def window_sum(row):
