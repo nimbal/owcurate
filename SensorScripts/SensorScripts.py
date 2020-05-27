@@ -114,7 +114,7 @@ class SensorScripts:
         Returns:
             self.temperature: the pyedflib read file
             self.temperature_values: all the data point values for the temperature sensor
-            self.temperature_frequency: sample rate of temperature sensor (currently hard coded at 0.25)
+            self.temperature_frequency: sample rate of temperature sensor
             self.temperature_start_datetime: Start date and time of the recording
             self.temperature_duration: Length of recording in seconds
             self.temperature_endtime: End date and time of the recording
@@ -128,7 +128,7 @@ class SensorScripts:
 
         self.temperature = pyedflib.EdfReader(path_to_temperature)
         self.temperature_values = self.temperature.readSignal(0)
-        self.temperature_frequency = 0.25  # self.temperature.samplefrequency(0)
+        self.temperature_frequency = self.temperature.getNSamples()[0] / self.temperature.getFileDuration()
         self.temperature_start_datetime = self.temperature.getStartdatetime()
         self.temperature_duration = self.temperature.getFileDuration()
 
@@ -245,7 +245,7 @@ class SensorScripts:
         return df
 
     @staticmethod
-    def read_OND07_nonwear_log():
+    def read_OND07_nonwear_log(path):
         """
 
         Returns:
@@ -260,7 +260,14 @@ class SensorScripts:
             - Must have access to the NiMBaL drive
             - The time stamps have been updated to better reflect the non-wear time by Kyle Weber through visual inspection
         """
-        logs_df = pd.read_excel(r"O:\Data\OND07\Raw data\Tables\Nondominant_NonwearLog.xlsx")  # Read non-wear logs into a dataframe
+        logs_df = pd.read_excel(path)  # Read non-wear logs into a dataframe
+        logs_df["DEVICE OFF"] = pd.to_datetime(logs_df["DEVICE OFF"], format="%Y%b%d %H:%M")
+        logs_df["DEVICE ON"] = pd.to_datetime(logs_df["DEVICE ON"], format="%Y%b%d %H:%M")
+        return logs_df
+
+    @staticmethod
+    def read_OND06_nonwear_log(path):
+        logs_df = pd.read_excel(path)  # Read non-wear logs into a dataframe
         logs_df["DEVICE OFF"] = pd.to_datetime(logs_df["DEVICE OFF"], format="%Y%b%d %H:%M")
         logs_df["DEVICE ON"] = pd.to_datetime(logs_df["DEVICE ON"], format="%Y%b%d %H:%M")
         return logs_df
@@ -439,7 +446,7 @@ class SensorScripts:
 
         return final_df
 
-    def zhou_nonwear(self, min_number_4sbins = 1, t0 = 26):
+    def zhou_nonwear(self, min_number_bins = 1, t0 = 26, ws=60):
 
         '''
         Calculated non-wear results based on the algorithm created by Shang-Ming Zhou
@@ -447,8 +454,9 @@ class SensorScripts:
 
 
         Args:
-            min_number_4sbins: The number of consecutive 4 second bins needed for the bout to be considered valid non-wear
+            min_number_bins: The number of consecutive 4 second bins needed for the bout to be considered valid non-wear
             t0: The threshold at which temp has to be below to be considered valid nonwear
+            ws: window size in seconds
 
         Notes:
             we are using a forward moving window of 4s since that is how often we get temperature results. The original study by Zhou used 1s
@@ -468,38 +476,39 @@ class SensorScripts:
                                 "Raw Temperature Values": self.temperature_values})
 
         temperature_moving_average = pd.Series(self.temperature_values).rolling(
-            int(60 * self.temperature_frequency)).mean()
+            int(ws * self.temperature_frequency)).mean()
 
         # Accelerometer
 
         zhou_accelerometer_df = pd.DataFrame({"X": self.x_values, "Y": self.y_values, "Z": self.z_values},
                                              index=self.accelerometer_timestamps)
-        zhou_accelerometer_rolling_std = zhou_accelerometer_df.rolling(int(60 * self.accelerometer_frequency)).std()
-        binned_4s_df = zhou_accelerometer_rolling_std.iloc[::int(4 * self.accelerometer_frequency), :]
+        zhou_accelerometer_rolling_std = zhou_accelerometer_df.rolling(int(ws * self.accelerometer_frequency)).std()
+        # takes the row of every next one
+        binned_df = zhou_accelerometer_rolling_std.iloc[::int(self.accelerometer_frequency / self.temperature_frequency), :]
 
         # Combined
         temp_moving_average_list = list(temperature_moving_average.values)
-        if len(temp_moving_average_list) > len(binned_4s_df):
-            temp_moving_average_list = temp_moving_average_list[:len(binned_4s_df)]
-        if len(temp_moving_average_list) < len(binned_4s_df):
+        if len(temp_moving_average_list) > len(binned_df):
+            temp_moving_average_list = temp_moving_average_list[:len(binned_df)]
+        if len(temp_moving_average_list) < len(binned_df):
             temp_moving_average_list.append(0)
         print("LENGTH Temp list:", len(temp_moving_average_list))
-        print("LENGTH BINNED 4s DF:", len(binned_4s_df))
+        print("LENGTH BINNED 4s DF:", len(binned_df))
 
-        binned_4s_df["Temperature Moving Average"] = temp_moving_average_list
+        binned_df["Temperature Moving Average"] = temp_moving_average_list
 
         # Zhou Algorithm
 
         not_worn = []
         end_times = []
-        for index, row in binned_4s_df.iterrows():
+        for index, row in binned_df.iterrows():
             end_times.append(index + dt.timedelta(seconds=4))
             if (row["Temperature Moving Average"] < t0) and (((row["X"] + row["Y"] + row["Z"]) / 3) < 0.013):
                 not_worn.append(True)
             elif row["Temperature Moving Average"] >= t0:
                 not_worn.append(False)
             else:
-                earlier_window_temp = binned_4s_df["Temperature Moving Average"].shift(int(60 * self.temperature_frequency)).loc[index]
+                earlier_window_temp = binned_df["Temperature Moving Average"].shift(int(ws * self.temperature_frequency)).loc[index]
                 if row["Temperature Moving Average"] > earlier_window_temp:
                     not_worn.append(False)
                 elif row["Temperature Moving Average"] < earlier_window_temp:
@@ -509,14 +518,12 @@ class SensorScripts:
                 else:
                     not_worn.append(False)
 
-        binned_4s_df["Bin Not Worn?"] = not_worn
-        binned_4s_df["Bin Worn Consecutive Count"] = binned_4s_df["Bin Not Worn?"] * (binned_4s_df["Bin Not Worn?"].groupby((binned_4s_df["Bin Not Worn?"] != binned_4s_df["Bin Not Worn?"].shift()).cumsum()).cumcount() + 1)
+        binned_df["Bin Not Worn?"] = not_worn
+        binned_df["Bin Worn Consecutive Count"] = binned_df["Bin Not Worn?"] * (binned_df["Bin Not Worn?"].groupby((binned_df["Bin Not Worn?"] != binned_df["Bin Not Worn?"].shift()).cumsum()).cumcount() + 1)
+        binned_df["Device Worn?"] = True
+        binned_df["Device Worn?"].loc[binned_df["Bin Worn Consecutive Count"] >= min_number_bins] = False
+        binned_df["End Time"] = end_times
 
-
-        binned_4s_df["Device Worn?"] = True
-        binned_4s_df["Device Worn?"].loc[binned_4s_df["Bin Worn Consecutive Count"] >= min_number_4sbins] = False
-        binned_4s_df["End Time"] = end_times
-
-        final_df = binned_4s_df[['End Time', 'Device Worn?']].copy()
+        final_df = binned_df[['End Time', 'Device Worn?']].copy()
 
         return final_df

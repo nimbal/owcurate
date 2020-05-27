@@ -1,7 +1,7 @@
 # Created by Adam Vert
 # March 2020
 # ======================================== IMPORTS ========================================
-from SensorScripts.SensorScripts import *
+from SensorScripts import *
 import matplotlib.pyplot as plt
 import datetime as dt
 
@@ -16,9 +16,11 @@ Returns:
 '''
 
 s = SensorScripts()
-subject_id = 3006
-s.read_accelerometer(r"D:\Adam PC\PycharmProjects\owcurate\OND07 EDF FILES\Accelerometer\DATAFILES\OND07_WTL_%s_A_GENEActiv_Accelerometer_LWrist.edf" % subject_id)
-s.read_temperature(r"D:\Adam PC\PycharmProjects\owcurate\OND07 EDF FILES\Temperature\DATAFILES\OND07_WTL_%s_A_GENEActiv_Temperature_LWrist.edf" % subject_id)
+subject_id = 1039
+accel_path = r"E:\nimbal\data\OND06_processed_%d\Accelerometer\DATAFILES\OND06_SBH_%d_A_SE01_GABL_GENEActiv_Accelerometer_LA.edf" % (subject_id, subject_id)
+temp_path = r"E:\nimbal\data\OND06_processed_%d\Temperature\DATAFILES\OND06_SBH_%d_A_SE01_GABL_GENEActiv_Temperature_LA.edf" % (subject_id, subject_id)
+s.read_accelerometer(accel_path)
+s.read_temperature(temp_path)
 
 
 
@@ -28,7 +30,7 @@ timestamps = np.asarray(pd.date_range(s.accelerometer_start_datetime, end_time, 
 
 
 #  Vanhess nonwear calculation
-vh_df = s.vanhees_nonwear(bin_size=1)
+vh_df = s.vanhees_nonwear(bin_size=15)
 vh_nw_starts = vh_df.loc[vh_df["Device Worn?"] == False].index
 vh_nw_ends = vh_df["End Time"].loc[vh_df["Device Worn?"] == False].to_numpy()
 del vh_df
@@ -60,7 +62,7 @@ ax2.xaxis.set_major_formatter(xfmt)
 ax2.xaxis.set_major_locator(locator)
 
 # Logged NW times:
-logged_nw_df = s.read_OND07_nonwear_log()
+logged_nw_df = s.read_OND07_nonwear_log(path=r"E:\\nimbal\\data\\non-wear_data\\Nondominant_NonwearLog.xlsx")
 logged_nw_subject_df = logged_nw_df.loc[logged_nw_df["ID"] == subject_id]
 logged_nw_starts = logged_nw_subject_df["DEVICE OFF"]
 logged_nw_ends = logged_nw_subject_df["DEVICE ON"]
@@ -92,12 +94,6 @@ try:
                          y2=np.max(s.temperature_values) - (
                     np.max(s.temperature_values) - np.min(s.temperature_values)) /3 - 0.5,
                          color='orange', alpha=0.60, linewidth=0.0)
-
-    for start, end in zip(logged_nw_starts, logged_nw_ends):
-        ax1.fill_between(x=[start, end], y1=-8, y2=-3, color='blue', alpha=0.60, linewidth=0.0)
-        ax2.fill_between(x=[start, end], y1=np.min(s.temperature_values),y2=np.max(s.temperature_values) - (
-                    np.max(s.temperature_values) - np.min(s.temperature_values))*2 /3 - 0.5,color='blue', alpha=0.60,linewidth=0.0)
-
 except (IndexError, AttributeError):
     pass
 
