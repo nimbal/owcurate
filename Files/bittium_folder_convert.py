@@ -3,7 +3,7 @@ from pathlib import Path
 import os
 
 def bittium_folder_convert(input_dir, output_dir):
-    # TODO: option to overwrites files
+    # TODO: option to NOT overwrites files
 
     # create dirs
     accel_dir = os.path.join(output_dir, "Accelerometer", "DATAFILES")
@@ -17,5 +17,10 @@ def bittium_folder_convert(input_dir, output_dir):
     for f in os.listdir(input_dir):
         if not f.lower().endswith('.edf'):
             continue
-        pyedflib.highlevel.drop_channels(f, edf_target=accel_dir,to_keep=accel_channels)
-        pyedflib.highlevel.drop_channels(f, edf_target=ecg_dir,to_keep=ecg_channels)
+        f_path = os.path.join(input_dir, f)
+        pyedflib.highlevel.drop_channels(f_path, edf_target=os.path.join(accel_dir, f), to_keep=accel_channels)
+        pyedflib.highlevel.drop_channels(f_path, edf_target=os.path.join(ecg_dir, f), to_keep=ecg_channels)
+
+input_dir=r'E:\nimbal\data\OND06\raw_bittium_1039'
+output_dir=r'E:\nimbal\data\OND06\processed_bittium_1039'
+bittium_folder_convert(input_dir, output_dir)
