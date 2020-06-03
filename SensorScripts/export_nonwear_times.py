@@ -48,9 +48,12 @@ def export_ga(data_pkg_dir):
 
 
     df = pd.DataFrame(export_dict)
+    return df
 
+def group_nw_times(export_ga_df, group_time_sec=10, min_duration=300):
+    df = export_ga_df
     # groups non-wear sections within 10 seconds of each other
-    groups = ( (df['start_time']-df['end_time'].shift()) < np.timedelta64(10, 's') )  & (df['ID'] == df['ID'].shift()) & (df['location'] == df['location'].shift()) 
+    groups = ( (df['start_time']-df['end_time'].shift()) < np.timedelta64(group_time_sec, 's') )  & (df['ID'] == df['ID'].shift()) & (df['location'] == df['location'].shift()) 
     df['bout_nums'] = ( groups != groups.shift() ).cumsum()
     u, i, c = np.unique(df['bout_nums'], return_counts=True, return_index=True)
     df['bout_nums'][i[c == 1]] += 1
@@ -66,9 +69,12 @@ def export_ga(data_pkg_dir):
         export_dict['location'].append(group['location'].iloc[0])
         export_dict['duration'].append( (group['end_time'].max() - group['start_time'].min()) / np.timedelta64(1, 's') )
 
-
     export_df = pd.DataFrame(export_dict)
-    export_df.to_csv('nonwear_data.csv')
+    export_df = export_df.loc[export_df['duration'] >= min_duration]
+    return export_df
 
 
-export_ga('/Users/matt/Documents/coding/nimbal/data/test')
+df = export_ga('/Users/matt/Documents/coding/nimbal/data/test')
+df.to_csv('export_ga.csv')
+df = group_nw_times(df)
+df.to_csv('grouped_nw_GA_times.csv')
