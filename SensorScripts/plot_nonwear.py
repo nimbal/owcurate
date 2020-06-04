@@ -19,6 +19,9 @@ s = SensorScripts()
 subject_id = 1039
 accel_path = r"E:\nimbal\data\OND06_processed_%d\Accelerometer\DATAFILES\OND06_SBH_%d_A_SE01_GABL_GENEActiv_Accelerometer_LW.edf" % (subject_id, subject_id)
 temp_path = r"E:\nimbal\data\OND06_processed_%d\Temperature\DATAFILES\OND06_SBH_%d_A_SE01_GABL_GENEActiv_Temperature_LW.edf" % (subject_id, subject_id)
+accel_path = r'/Users/matt/Documents/coding/nimbal/data/processed/OND07_WTL_3034_A_GENEActiv_Accelerometer_LAnkle.edf'
+temp_path = r'/Users/matt/Documents/coding/nimbal/data/processed/OND07_WTL_3034_A_GENEActiv_Temperature_LAnkle.edf'
+log_path = r"/Users/matt/Documents/coding/nimbal/OND07_Sensor_Removal_Log_Data.xlsx"
 s.read_accelerometer(accel_path)
 s.read_temperature(temp_path)
 
@@ -30,10 +33,12 @@ timestamps = np.asarray(pd.date_range(s.accelerometer_start_datetime, end_time, 
 
 
 #  Vanhess nonwear calculation
+"""
 vh_df = s.vanhees_nonwear(bin_size=15)
 vh_nw_starts = vh_df.loc[vh_df["Device Worn?"] == False].index
 vh_nw_ends = vh_df["End Time"].loc[vh_df["Device Worn?"] == False].to_numpy()
 del vh_df
+"""
 
 # Set up subplot
 fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, gridspec_kw={'height_ratios': [3, 3]})
@@ -53,15 +58,17 @@ ax1.set_title("Vanhees=Red, Huberty=Green, Zhou=Orange, Log=Blue")
 del timestamps
 
 # Subplot 2 (Temperature)
+temperature_moving_average = pd.Series(s.temperature_values).rolling(
+            int(60 * s.temperature_frequency)).mean()
 timestamps_temperature = np.asarray(
     pd.date_range(s.temperature_start_datetime, end_time, periods=len(s.temperature_values)))
-ax2.plot(timestamps_temperature, s.temperature_values, color='black', label="Temperature")
+ax2.plot(timestamps_temperature, temperature_moving_average, color='black', label="Temperature")
 ax2.legend(loc="upper left")
 ax2.xaxis.set_major_formatter(xfmt)
 ax2.xaxis.set_major_locator(locator)
 
 # Logged NW times:
-logged_nw_df = s.read_OND06_nonwear_log(path=r"E:\\nimbal\\data\\non-wear_data\\Sensor_Removal_Log_Data.xlsx")
+logged_nw_df = s.read_OND06_nonwear_log(path=log_path)
 logged_nw_subject_df = logged_nw_df.loc[logged_nw_df["ID"] == subject_id]
 logged_nw_starts = logged_nw_subject_df["DEVICE OFF"]
 logged_nw_ends = logged_nw_subject_df["DEVICE ON"]
@@ -80,12 +87,13 @@ del zhou_df
 
 # fill non-wear times
 try:
+    """
     for start, end in zip(vh_nw_starts, vh_nw_ends):
         ax1.fill_between(x=[np.datetime64(start), end], y1=3, y2=8, color='red', alpha=0.60, linewidth=0.0)
         ax2.fill_between(x=[np.datetime64(start), end], y1=np.max(s.temperature_values) - (
                     np.max(s.temperature_values) - np.min(s.temperature_values)) /3 + 0.5,
                          y2=np.max(s.temperature_values), color='red', alpha=0.60, linewidth=0.0)
-
+    """
     for start, end in zip(zhou_nw_starts, zhou_nw_ends):
         ax1.fill_between(x=[np.datetime64(start), end], y1=-2.5, y2=2.5, color='Orange', alpha=0.60, linewidth=0.0)
         ax2.fill_between(x=[np.datetime64(start), end], y1=np.max(s.temperature_values) - (

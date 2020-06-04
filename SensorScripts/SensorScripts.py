@@ -481,9 +481,11 @@ class SensorScripts:
 
         zhou_accelerometer_df = pd.DataFrame({"X": self.x_values, "Y": self.y_values, "Z": self.z_values},
                                              index=self.accelerometer_timestamps)
-        zhou_accelerometer_rolling_std = zhou_accelerometer_df.rolling(int(ws * self.accelerometer_frequency)).std()
+        rolling = zhou_accelerometer_df.rolling(int(ws * self.accelerometer_frequency))
+        zhou_accelerometer_df[['x-std', 'y-std', 'z-std']] = rolling.std()[['X', 'Y', 'Z']]
+        zhou_accelerometer_df[['x-range', 'y-range', 'z-range']] = rolling.max()[['X', 'Y', 'Z']] - rolling.min()[['X', 'Y', 'Z']]
         # takes the row of every next one
-        binned_df = zhou_accelerometer_rolling_std.iloc[::int(self.accelerometer_frequency / self.temperature_frequency), :]
+        binned_df = zhou_accelerometer_df.iloc[::int(self.accelerometer_frequency / self.temperature_frequency), :]
 
         # Combined
         temp_moving_average_list = list(temperature_moving_average.values)
@@ -502,7 +504,10 @@ class SensorScripts:
         end_times = []
         for index, row in binned_df.iterrows():
             end_times.append(index + dt.timedelta(seconds=4))
-            if (row["Temperature Moving Average"] < t0) and (((row["X"] + row["Y"] + row["Z"]) / 3) < 0.013):
+            accel_non_wear = ( ((row["x-std"] < 0.013) + (row["y-std"] < 0.013) + (row["z-std"] < 0.013)) >= 2 or
+                                 ((row["x-range"] < 0.05) + (row["y-range"] < 0.05) + (row["z-range"] < 0.05)) >= 2 )
+
+            if (row["Temperature Moving Average"] < t0) and accel_non_wear:
                 not_worn.append(True)
             elif row["Temperature Moving Average"] >= t0:
                 not_worn.append(False)
