@@ -445,7 +445,7 @@ class SensorScripts:
 
         return final_df
 
-    def zhou_nonwear(self, min_number_bins = 1, t0 = 26, ws=60):
+    def zhou_nonwear(self, t0 = 26, ws=60):
 
         '''
         Calculated non-wear results based on the algorithm created by Shang-Ming Zhou
@@ -497,36 +497,38 @@ class SensorScripts:
         print("LENGTH BINNED 4s DF:", len(binned_df))
 
         binned_df["Temperature Moving Average"] = temp_moving_average_list
+        binned_df['earlier_window_temp'] = binned_df["Temperature Moving Average"].shift(int(ws * self.temperature_frequency))
 
         # Zhou Algorithm
 
         not_worn = []
         end_times = []
-        for index, row in binned_df.iterrows():
-            end_times.append(index + dt.timedelta(seconds=4))
-            accel_non_wear = ( ((row["x-std"] < 0.013) + (row["y-std"] < 0.013) + (row["z-std"] < 0.013)) >= 2 or
-                                 ((row["x-range"] < 0.05) + (row["y-range"] < 0.05) + (row["z-range"] < 0.05)) >= 2 )
+
+        def zhou_alg(row):
+            global not_worn
+            accel_non_wear = ( (int(row["x-std"] < 0.013) + int(row["y-std"] < 0.013) + int(row["z-std"] < 0.013)) >= 2 or
+                                 (int(row["x-range"] < 0.05) + int(row["y-range"] < 0.05) + int(row["z-range"] < 0.05)) >= 2 )
 
             if (row["Temperature Moving Average"] < t0) and accel_non_wear:
-                not_worn.append(True)
+                not_worn = True
             elif row["Temperature Moving Average"] >= t0:
-                not_worn.append(False)
+                not_worn = False
             else:
-                earlier_window_temp = binned_df["Temperature Moving Average"].shift(int(ws * self.temperature_frequency)).loc[index]
+                earlier_window_temp = row['earlier_window_temp']
                 if row["Temperature Moving Average"] > earlier_window_temp:
-                    not_worn.append(False)
+                    not_worn = False
                 elif row["Temperature Moving Average"] < earlier_window_temp:
-                    not_worn.append(True)
+                    not_worn = True
                 elif row["Temperature Moving Average"] == earlier_window_temp:
-                    not_worn.append(not_worn[-1])
+                    not_worn = not_worn
                 else:
-                    not_worn.append(False)
+                    not_worn = False
+            return not_worn
 
-        binned_df["Bin Not Worn?"] = not_worn
-        binned_df["Bin Worn Consecutive Count"] = binned_df["Bin Not Worn?"] * (binned_df["Bin Not Worn?"].groupby((binned_df["Bin Not Worn?"] != binned_df["Bin Not Worn?"].shift()).cumsum()).cumcount() + 1)
-        binned_df["Device Worn?"] = True
-        binned_df["Device Worn?"].loc[binned_df["Bin Worn Consecutive Count"] >= min_number_bins] = False
-        binned_df["End Time"] = end_times
+        not_worn = True
+        binned_df['Bin Not Worn?'] = binned_df.apply(zhou_alg, axis=1)
+        binned_df["Device Worn?"] = np.invert(binned_df['Bin Not Worn?'])
+        binned_df["End Time"] = binned_df.index + dt.timedelta(seconds=1/self.temperature_frequency)
 
         final_df = binned_df[['End Time', 'Device Worn?']].copy()
 
