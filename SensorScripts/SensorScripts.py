@@ -508,28 +508,35 @@ class SensorScripts:
             global not_worn
             accel_non_wear = ( (int(row["x-std"] < 0.013) + int(row["y-std"] < 0.013) + int(row["z-std"] < 0.013)) >= 2 or
                                  (int(row["x-range"] < 0.05) + int(row["y-range"] < 0.05) + int(row["z-range"] < 0.05)) >= 2 )
-
             if (row["Temperature Moving Average"] < t0) and accel_non_wear:
                 not_worn = True
+                reason = 0
             elif row["Temperature Moving Average"] >= t0:
                 not_worn = False
+                reason = 1
             else:
                 earlier_window_temp = row['earlier_window_temp']
                 if row["Temperature Moving Average"] > earlier_window_temp:
                     not_worn = False
+                    reason = 2
                 elif row["Temperature Moving Average"] < earlier_window_temp:
                     not_worn = True
+                    reason = 3
                 elif row["Temperature Moving Average"] == earlier_window_temp:
                     not_worn = not_worn
+                    reason = 4
                 else:
                     not_worn = False
-            return not_worn
+                    reason = 5
+            return pd.Series([not_worn, reason])
 
         not_worn = True
-        binned_df['Bin Not Worn?'] = binned_df.apply(zhou_alg, axis=1)
+        binned_df[['Bin Not Worn?', 'Reason']] = binned_df.apply(zhou_alg, axis=1)
+        binned_df['std_score'] = (binned_df["x-std"] < 0.013).astype(int) + (binned_df["y-std"] < 0.013).astype(int) + (binned_df["z-std"] < 0.013).astype(int)
+        binned_df['range_score'] = (binned_df["x-range"] < 0.05).astype(int) + (binned_df["y-range"] < 0.05).astype(int) + (binned_df["z-range"] < 0.05).astype(int)
         binned_df["Device Worn?"] = np.invert(binned_df['Bin Not Worn?'])
         binned_df["End Time"] = binned_df.index + dt.timedelta(seconds=1/self.temperature_frequency)
 
-        final_df = binned_df[['End Time', 'Device Worn?']].copy()
+        final_df = binned_df[['End Time', 'Device Worn?', 'Reason', 'std_score', 'range_score']].copy()
 
         return final_df
