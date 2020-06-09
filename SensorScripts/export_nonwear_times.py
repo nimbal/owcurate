@@ -8,15 +8,13 @@ def export_nw_times(accel_path, temp_path):
     s = SensorScripts()
     s.read_accelerometer(accel_path)
     s.read_temperature(temp_path)
-    zhou_df = s.zhou_nonwear()
+    zhou_df = s.zhou_nonwear(use_updated_alg=True)
     zhou_nw_starts = zhou_df.loc[zhou_df["Device Worn?"] == False].index.to_numpy()
     zhou_nw_ends = zhou_df["End Time"].loc[zhou_df["Device Worn?"] == False].to_numpy()
-    zhou_reason = zhou_df['Reason'].loc[zhou_df["Device Worn?"] == False].to_numpy()
-    zhou_std_score = zhou_df['std_score'].loc[zhou_df["Device Worn?"] == False].to_numpy()
-    zhou_range_score = zhou_df['range_score'].loc[zhou_df["Device Worn?"] == False].to_numpy()
+    zhou_accel_nw = zhou_df['is_accel_nw'].loc[zhou_df["Device Worn?"] == False].to_numpy()
     del zhou_df
 
-    return zhou_nw_starts, zhou_nw_ends, zhou_reason, zhou_std_score, zhou_range_score
+    return zhou_nw_starts, zhou_nw_ends, zhou_accel_nw
 
 def export_ga(data_pkg_dir):
     placeholder_txt = '(((PLACEHOLDER_SENSOR))))'
@@ -30,7 +28,7 @@ def export_ga(data_pkg_dir):
     u, c = np.unique(accel_files + temp_files, return_counts=True)
     edf_files = u[c > 1]
 
-    export_dict = {'ID': [], 'start_time': [], 'end_time': [], 'location': [], 'duration': [], 'reason': [], 'std_score': [], 'range_score': []}
+    export_dict = {'ID': [], 'start_time': [], 'end_time': [], 'location': [], 'duration': [], 'is_accel_nw': [] }
 
     for f in tqdm(edf_files, desc='Reading and converting EDF Files', total=len(edf_files)):
         accel_path = os.path.join(accel_dir, f.replace(placeholder_txt, 'Accelerometer'))
@@ -38,7 +36,7 @@ def export_ga(data_pkg_dir):
         location = f.split('.')[0].split('_')[-1]
         subject_id = f.split('.')[0].split('_')[2]
 
-        start, end, reason, std_score, range_score = export_nw_times(accel_path, temp_path)
+        start, end, is_accel_nw = export_nw_times(accel_path, temp_path)
 
         if not len(start) == len(end):
             raise Exception('Start and end lengths do not match for zhou_df')
@@ -48,9 +46,7 @@ def export_ga(data_pkg_dir):
         export_dict['start_time'].extend(start)
         export_dict['end_time'].extend(end)
         export_dict['duration'].extend(end-start)
-        export_dict['reason'].extend(reason)
-        export_dict['std_score'].extend(std_score)
-        export_dict['range_score'].extend(range_score)
+        export_dict['is_accel_nw'].extend(is_accel_nw)
 
     df = pd.DataFrame(export_dict)
     return df
@@ -65,7 +61,7 @@ def group_nw_times(export_ga_df, group_time_sec=10, min_duration=300):
     u, i, c = np.unique(df['nw_nums'], return_counts=True, return_index=True)
     df['nw_nums'][i[c == 1]] += 1 # groups the lone nw_nums
 
-    export_dict = {'ID': [], 'start_time': [], 'end_time': [], 'location': [], 'duration': [], 'reason': []}
+    export_dict = {'ID': [], 'start_time': [], 'end_time': [], 'location': [], 'duration': []}
 
     for name, group in df.groupby('nw_nums'):
         # skips nw_nums that shouldn't be grouped together 
@@ -76,7 +72,6 @@ def group_nw_times(export_ga_df, group_time_sec=10, min_duration=300):
         export_dict['end_time'].append(group['end_time'].max())
         export_dict['location'].append(group['location'].iloc[0])
         export_dict['duration'].append( (group['end_time'].max() - group['start_time'].min()) / np.timedelta64(1, 's') )
-        export_dict['reason'].append(group['reason'].mean())
 
     export_df = pd.DataFrame(export_dict)
     export_df = export_df.loc[export_df['duration'] >= min_duration]
