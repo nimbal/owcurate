@@ -8,12 +8,13 @@ def export_nw_times(accel_path, temp_path):
     s = SensorScripts()
     s.read_accelerometer(accel_path)
     s.read_temperature(temp_path)
-    zhou_df = s.zhou_nonwear()
+    zhou_df = s.zhou_nonwear(use_updated_alg=True)
     zhou_nw_starts = zhou_df.loc[zhou_df["Device Worn?"] == False].index.to_numpy()
     zhou_nw_ends = zhou_df["End Time"].loc[zhou_df["Device Worn?"] == False].to_numpy()
+    zhou_accel_nw = zhou_df['is_accel_nw'].loc[zhou_df["Device Worn?"] == False].to_numpy()
     del zhou_df
 
-    return zhou_nw_starts, zhou_nw_ends
+    return zhou_nw_starts, zhou_nw_ends, zhou_accel_nw
 
 def export_ga(data_pkg_dir):
     placeholder_txt = '(((PLACEHOLDER_SENSOR))))'
@@ -27,7 +28,7 @@ def export_ga(data_pkg_dir):
     u, c = np.unique(accel_files + temp_files, return_counts=True)
     edf_files = u[c > 1]
 
-    export_dict = {'ID': [], 'start_time': [], 'end_time': [], 'location': [], 'duration': []}
+    export_dict = {'ID': [], 'start_time': [], 'end_time': [], 'location': [], 'duration': [], 'is_accel_nw': [] }
 
     for f in tqdm(edf_files, desc='Reading and converting EDF Files', total=len(edf_files)):
         accel_path = os.path.join(accel_dir, f.replace(placeholder_txt, 'Accelerometer'))
@@ -35,7 +36,7 @@ def export_ga(data_pkg_dir):
         location = f.split('.')[0].split('_')[-1]
         subject_id = f.split('.')[0].split('_')[2]
 
-        start, end = export_nw_times(accel_path, temp_path)
+        start, end, is_accel_nw = export_nw_times(accel_path, temp_path)
 
         if not len(start) == len(end):
             raise Exception('Start and end lengths do not match for zhou_df')
@@ -45,7 +46,7 @@ def export_ga(data_pkg_dir):
         export_dict['start_time'].extend(start)
         export_dict['end_time'].extend(end)
         export_dict['duration'].extend(end-start)
-
+        export_dict['is_accel_nw'].extend(is_accel_nw)
 
     df = pd.DataFrame(export_dict)
     return df
@@ -53,16 +54,19 @@ def export_ga(data_pkg_dir):
 def group_nw_times(export_ga_df, group_time_sec=10, min_duration=300):
     df = export_ga_df
     # groups non-wear sections within 10 seconds of each other
-    groups = ( (df['start_time']-df['end_time'].shift()) < np.timedelta64(group_time_sec, 's') )  & (df['ID'] == df['ID'].shift()) & (df['location'] == df['location'].shift()) 
-    df['bout_nums'] = ( groups != groups.shift() ).cumsum()
-    u, i, c = np.unique(df['bout_nums'], return_counts=True, return_index=True)
-    df['bout_nums'][i[c == 1]] += 1
-    df['bout_nums'] = (df['bout_nums'] != df['bout_nums'].shift() ).cumsum()
+    df['groups'] = ((df['start_time']-df['end_time'].shift()) < np.timedelta64(group_time_sec, 's') )  & (df['ID'] == df['ID'].shift()) & (df['location'] == df['location'].shift()) 
+    df['nw_nums'] = ( df['groups'] != df['groups'].shift()  ).cumsum() # assigns nw_nums to groups
 
+    # groups the nw_nums to their 
+    u, i, c = np.unique(df['nw_nums'], return_counts=True, return_index=True)
+    df['nw_nums'][i[c == 1]] += 1 # groups the lone nw_nums
 
     export_dict = {'ID': [], 'start_time': [], 'end_time': [], 'location': [], 'duration': []}
 
-    for name, group in df.groupby('bout_nums'):
+    for name, group in df.groupby('nw_nums'):
+        # skips nw_nums that shouldn't be grouped together 
+        if not group['groups'].any():
+            continue
         export_dict['ID'].append(group['ID'].iloc[0])
         export_dict['start_time'].append(group['start_time'].min())
         export_dict['end_time'].append(group['end_time'].max())

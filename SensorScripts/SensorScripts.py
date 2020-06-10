@@ -445,8 +445,8 @@ class SensorScripts:
 
         return final_df
 
-    def zhou_nonwear(self, t0 = 26, ws=60):
 
+    def zhou_nonwear(self, t0 = 26, ws=60, use_updated_alg=False):
         '''
         Calculated non-wear results based on the algorithm created by Shang-Ming Zhou
         https://bmjopen.bmj.com/content/5/5/e007447
@@ -466,8 +466,6 @@ class SensorScripts:
             - End Time -> The end time of the bin
             - Device Worn? -> Indicates whether worn (1) or not worn (0) during that bin according the the algorithm
          '''
-
-
 
         # Temperature
         pd.set_option('mode.chained_assignment', None)
@@ -499,23 +497,19 @@ class SensorScripts:
         binned_df["Temperature Moving Average"] = temp_moving_average_list
         binned_df['earlier_window_temp'] = binned_df["Temperature Moving Average"].shift(int(ws * self.temperature_frequency))
 
-        # Zhou Algorithm
-
-        not_worn = []
-        end_times = []
-
-        def zhou_alg(row):
+        def zhou_alg(row, update_alg=False):
             global not_worn
             accel_non_wear = ( (int(row["x-std"] < 0.013) + int(row["y-std"] < 0.013) + int(row["z-std"] < 0.013)) >= 2 or
                                  (int(row["x-range"] < 0.05) + int(row["y-range"] < 0.05) + int(row["z-range"] < 0.05)) >= 2 )
-
             if (row["Temperature Moving Average"] < t0) and accel_non_wear:
                 not_worn = True
             elif row["Temperature Moving Average"] >= t0:
                 not_worn = False
             else:
                 earlier_window_temp = row['earlier_window_temp']
-                if row["Temperature Moving Average"] > earlier_window_temp:
+                if (not accel_non_wear) and update_alg:
+                    not_worn = False
+                elif row["Temperature Moving Average"] > earlier_window_temp:
                     not_worn = False
                 elif row["Temperature Moving Average"] < earlier_window_temp:
                     not_worn = True
@@ -523,13 +517,14 @@ class SensorScripts:
                     not_worn = not_worn
                 else:
                     not_worn = False
-            return not_worn
+            return pd.Series([not_worn, accel_non_wear])
+
 
         not_worn = True
-        binned_df['Bin Not Worn?'] = binned_df.apply(zhou_alg, axis=1)
+        binned_df[['Bin Not Worn?', 'is_accel_nw']] = binned_df.apply(lambda row: zhou_alg(row, use_updated_alg), axis=1)
         binned_df["Device Worn?"] = np.invert(binned_df['Bin Not Worn?'])
         binned_df["End Time"] = binned_df.index + dt.timedelta(seconds=1/self.temperature_frequency)
 
-        final_df = binned_df[['End Time', 'Device Worn?']].copy()
+        final_df = binned_df[['End Time', 'Device Worn?', 'is_accel_nw']].copy()
 
         return final_df
