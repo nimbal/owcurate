@@ -2,11 +2,12 @@ import pyedflib
 import shutil
 import os
 from pathlib import Path
+from tqdm import tqdm
 
 def update_GA_to_OND06(data_pkg_dir, subplatform_code='GNAC'):
     location_mapping = { 'LA': 'LAnkle', 'RA': 'RAnkle', 'LW': 'LWrist', 'RW': 'RWrist', 'AA': 'Aid' }
     edf_files = list(Path(data_pkg_dir).rglob("*.[eE][dD][fF]"))
-    for f in edf_files:
+    for f in tqdm(edf_files,desc='Updating Files:', total=len(edf_files)):
         file_dir ,filename = os.path.split(f)
         filename, ext = filename.split('.')
 
@@ -45,5 +46,4 @@ def update_GA_edf_header(edf_file, update_location=None):
         f.seek(0)
         f.write(header_info)
 
-print(update_edf_header('/Users/matt/Documents/coding/nimbal/data/test/Accelerometer/DATAFILES/OND06_SBH_1039_GNAC_ACCELEROMETER_LAnkle.edf'))
-#update_GA_to_OND06('../../data/test')
+update_GA_to_OND06(r'E:\nimbal\data\OND06\ProcessedEDF')
