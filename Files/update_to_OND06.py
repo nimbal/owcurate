@@ -38,7 +38,8 @@ def update_GA_to_OND06(data_pkg_dir, subplatform_code='GNAC'):
             ).replace('Button', 'BUTTON'
             ).replace('Light', 'LIGHT'
             ).replace('Temperature','TEMPERATURE'
-            ).replace('GENEActiv', 'GNAC')
+            ).replace('GENEActiv', 'GNAC'
+            ).replace('OND05', 'OND06')
 
         df.to_csv(f, mode="w", index=False)
 
