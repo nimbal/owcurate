@@ -489,7 +489,7 @@ class GENEActivFile:
         pdf_name = base_name + ".pdf"
         pdf_path = os.path.join(pdf_folder, pdf_name)
 
-        png_folder = os.path.join(pdf_folder, "temperature", "")
+        png_folder = os.path.join(pdf_folder, "png", "")
 
         # adjust sample rate for clock drift?
         sample_rate = self.file_info["measurement_frequency"]
@@ -546,7 +546,7 @@ class GENEActivFile:
                        self.header["Accelerometer Units"],
                        self.header["Light Meter Units"],
                        "",
-                       self.header["Temperature Sensors Units"]]
+                       self.header["Temperature Sensor Units"]]
 
         yaxis_lines = [[self.file_info["x_min"], 0, self.file_info["x_max"]],
                        [self.file_info["y_min"], 0, self.file_info["y_max"]],
