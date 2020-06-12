@@ -7,3 +7,4 @@ isodate
 datetime
 PySimpleGUI
 pyedflib
+tqdm
