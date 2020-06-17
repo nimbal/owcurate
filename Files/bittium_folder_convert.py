@@ -4,12 +4,13 @@ from datetime import datetime
 import pyedflib
 import os
 
+
 def bittium_folder_convert(input_dir, output_dir):
     # TODO: option to NOT overwrites files
 
     # create dirs
     accel_dir = os.path.join(output_dir, "Accelerometer", "DATAFILES")
-    accel_channels = [1 ,2 ,3]
+    accel_channels = [1, 2, 3]
     Path(accel_dir).mkdir(parents=True, exist_ok=True)
 
     ecg_dir = os.path.join(output_dir, "ECG", "DATAFILES")
@@ -19,9 +20,41 @@ def bittium_folder_convert(input_dir, output_dir):
     for f in os.listdir(input_dir):
         if not f.lower().endswith('.edf'):
             continue
+
         f_path = os.path.join(input_dir, f)
-        pyedflib.highlevel.drop_channels(f_path, edf_target=os.path.join(accel_dir, f), to_keep=accel_channels)
-        pyedflib.highlevel.drop_channels(f_path, edf_target=os.path.join(ecg_dir, f), to_keep=ecg_channels)
+        with open(f_path, "r+b") as read_file:
+            header_info = read_file.read(256)
+
+        print(f)
+        ecg_target = os.path.join(ecg_dir, update_filename(f, 'ECG'))
+        accel_target = os.path.join(accel_dir, update_filename(f, 'ACCELEROMETER'))
+        pyedflib.highlevel.drop_channels(f_path, edf_target=accel_target, to_keep=accel_channels)
+        pyedflib.highlevel.drop_channels(f_path, edf_target=ecg_target, to_keep=ecg_channels)
+
+        update_header(accel_target, header_info)
+        update_header(ecg_target, header_info)
+
+
+def update_filename(filename, device):
+    filename, ext = filename.split('.')[0], filename.split('.')[-1]
+    s_filename = filename.split('_')
+    subject = '_'.join(s_filename[:3])
+    subplatform_code = 'BITF'
+
+    filename_list = [subject, subplatform_code, device]
+    if len(s_filename) == 8:
+        filename_list.append(s_filename[-1])
+
+    new_filename = '_'.join(filename_list)
+    return '%s.%s' % (new_filename, ext)
+
+
+def update_header(device_edf_filepath, header_info):
+    header_info = header_info[:256]
+    with open(device_edf_filepath, "r+b") as f:
+        f.seek(0)
+        f.write(header_info)
+
 
 def create_filelist_csv(datapkg_dir):
     accel_dir = os.path.join(datapkg_dir, "Accelerometer", "DATAFILES")
@@ -31,7 +64,7 @@ def create_filelist_csv(datapkg_dir):
     visits = []
     sites = []
     dates = []
-    device_locations=[]
+    device_locations = []
     filenames = []
 
     for f in os.listdir(accel_dir):
@@ -49,13 +82,13 @@ def create_filelist_csv(datapkg_dir):
         filenames.append(f)
 
     file_list_df = pd.DataFrame(
-            {'SUBJECT': subjects,
-             'VISIT': visits,
-             'SITE': sites,
-             'DATE': dates,
-             'DEVICE_LOCATION': device_locations,
-             'FILENAME': filenames
-             })
+        {'SUBJECT': subjects,
+         'VISIT': visits,
+         'SITE': sites,
+         'DATE': dates,
+         'DEVICE_LOCATION': device_locations,
+         'FILENAME': filenames
+         })
 
 
 def create_data_csv(datapkg_dir):
@@ -72,7 +105,7 @@ def create_data_csv(datapkg_dir):
     collection_duration_datetime = []
     accelerometer_sample_rate = []
     ecg_sample_rate = []
-    
+
     for f in os.listdir(accel_dir):
         if not f.lower().endswith('.edf'):
             continue
@@ -90,24 +123,22 @@ def create_data_csv(datapkg_dir):
         start_times.append(accel_edf_header['startdate'].strftime("%H:%M:%S"))
 
         duration = datetime.timedelta(seconds=accel_edf_header['Duration']())
-        collection_duration_datetime.append(str(isodate.duration_isoformat(duration,'P%dDT%HH%MM%SS')))
+        collection_duration_datetime.append(str(isodate.duration_isoformat(duration, 'P%dDT%HH%MM%SS')))
         accelerometer_sample_rate.append(accel_edf_header['sample_rate'] if accel_edf_header['sample_rate'] else 'N/A')
         ecg_sample_rate.append(ecg_edf_header['sample_rate'] if ecg_edf_header['sample_rate'] else 'N/A')
 
-
-
     summary_metrics_list = {"SUBJECT": subject,
                             "VISIT": patient_visit_number,
-                            "SITE":data_collection_site,
-                            "DATE":dates,
+                            "SITE": data_collection_site,
+                            "DATE": dates,
                             "DEVICE_LOCATION": device_locations,
-                            # "DEVICE_ID": serial_number,
+                            # "DEVICE_ID": serial_number, # should be in the header
                             "START_TIME": start_times,
                             "COLLECTION_DURATION": collection_duration_datetime,
                             "ACCELEROMETER_SAMPLE_RATE": '{:.3f}'.format(accelerometer_sample_rate),
                             "ECG_SAMPLE_RATE": '{:.3f}'.format(ecg_sample_rate)}
 
 
-input_dir=r'E:\nimbal\data\OND06\raw_bittium_1039'
-output_dir=r'E:\nimbal\data\OND06\processed_bittium_1039'
+input_dir = r'/Users/matt/Documents/coding/nimbal/data/bittium/raw'
+output_dir = r'/Users/matt/Documents/coding/nimbal/data/bittium/processed'
 bittium_folder_convert(input_dir, output_dir)
