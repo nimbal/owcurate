@@ -16,12 +16,12 @@ Returns:
 '''
 
 s = SensorScripts()
-subject_id = 1039
-accel_path = r"E:\nimbal\data\OND06_processed_%d\Accelerometer\DATAFILES\OND06_SBH_%d_A_SE01_GABL_GENEActiv_Accelerometer_LW.edf" % (subject_id, subject_id)
-temp_path = r"E:\nimbal\data\OND06_processed_%d\Temperature\DATAFILES\OND06_SBH_%d_A_SE01_GABL_GENEActiv_Temperature_LW.edf" % (subject_id, subject_id)
-accel_path = r'/Users/matt/Documents/coding/nimbal/data/processed/OND07_WTL_3034_A_GENEActiv_Accelerometer_LAnkle.edf'
-temp_path = r'/Users/matt/Documents/coding/nimbal/data/processed/OND07_WTL_3034_A_GENEActiv_Temperature_LAnkle.edf'
-log_path = r"/Users/matt/Documents/coding/nimbal/OND07_Sensor_Removal_Log_Data.xlsx"
+subject_id = 8628
+accel_path = r"E:\nimbal\data\OND06\OND06_ALL_01_SNSR_GNAC_2020MAY31_DATAPKG\Accelerometer\DATAFILES\OND06_SBH_%d_GNAC_ACCELEROMETER_LWrist.edf" % (subject_id)
+temp_path = r"E:\nimbal\data\OND06\OND06_ALL_01_SNSR_GNAC_2020MAY31_DATAPKG\Temperature\DATAFILES\OND06_SBH_%d_GNAC_TEMPERATURE_LWrist.edf" % (subject_id)
+#accel_path = r'E:\nimbal\data\Non-Wear Data\Test6_Accelerometer.edf'
+#temp_path = r'E:\nimbal\data\Non-Wear Data\Test6_Temperature.edf'
+log_path = r"E:\nimbal\data\non-wear_data/Sensor_Removal_Log_Data.xlsx"
 s.read_accelerometer(accel_path)
 s.read_temperature(temp_path)
 
@@ -55,7 +55,6 @@ ax1.set_ylabel("G")
 ax1.xaxis.set_major_formatter(xfmt)
 ax1.xaxis.set_major_locator(locator)
 ax1.set_title("Vanhees=Red, Huberty=Green, Zhou=Orange, Log=Blue")
-del timestamps
 
 # Subplot 2 (Temperature)
 temperature_moving_average = pd.Series(s.temperature_values).rolling(
@@ -68,10 +67,12 @@ ax2.xaxis.set_major_formatter(xfmt)
 ax2.xaxis.set_major_locator(locator)
 
 # Logged NW times:
+
 logged_nw_df = s.read_OND06_nonwear_log(path=log_path)
 logged_nw_subject_df = logged_nw_df.loc[logged_nw_df["ID"] == subject_id]
 logged_nw_starts = logged_nw_subject_df["DEVICE OFF"]
 logged_nw_ends = logged_nw_subject_df["DEVICE ON"]
+
 
 # # Huberty NW Times
 # huberty_df = s.huberty_nonwear()
@@ -101,6 +102,7 @@ try:
                          y2=np.max(s.temperature_values) - (
                     np.max(s.temperature_values) - np.min(s.temperature_values)) /3 - 0.5,
                          color='orange', alpha=0.60, linewidth=0.0)
+    
     for start, end in zip(logged_nw_starts, logged_nw_ends):
         if end < start:
             #temporary fix
@@ -109,6 +111,7 @@ try:
             ax1.fill_between(x=[start, end], y1=-8, y2=-3, color='blue', alpha=0.60, linewidth=0.0)
             ax2.fill_between(x=[start, end], y1=np.min(s.temperature_values),y2=np.max(s.temperature_values) - (
                         np.max(s.temperature_values) - np.min(s.temperature_values))*2 /3 - 0.5,color='blue', alpha=0.60,linewidth=0.0)
+    
 except (IndexError, AttributeError):
     pass
 
