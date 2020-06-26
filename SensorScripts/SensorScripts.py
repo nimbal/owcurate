@@ -499,24 +499,41 @@ class SensorScripts:
 
         def zhou_alg(row, update_alg=False):
             global not_worn
+            strict_accel_nw = (int(row["x-std"] < 0.006) + int(row["y-std"] < 0.006) + int(row["z-std"] < 0.006)) >= 2
             accel_non_wear = ( (int(row["x-std"] < 0.013) + int(row["y-std"] < 0.013) + int(row["z-std"] < 0.013)) >= 2 or
                                  (int(row["x-range"] < 0.05) + int(row["y-range"] < 0.05) + int(row["z-range"] < 0.05)) >= 2 )
-            if (row["Temperature Moving Average"] < t0) and accel_non_wear:
-                not_worn = True
-            elif row["Temperature Moving Average"] >= t0:
-                not_worn = False
-            else:
-                earlier_window_temp = row['earlier_window_temp']
-                if (not accel_non_wear) and update_alg:
-                    not_worn = False
-                elif row["Temperature Moving Average"] > earlier_window_temp:
-                    not_worn = False
-                elif row["Temperature Moving Average"] < earlier_window_temp:
-                    not_worn = True
-                elif row["Temperature Moving Average"] == earlier_window_temp:
-                    not_worn = not_worn
+            earlier_window_temp = row['earlier_window_temp']
+            if update_alg:
+                if accel_non_wear:
+                    if row["Temperature Moving Average"] < t0:
+                        not_worn = True
+                    else:
+                        if row["Temperature Moving Average"] > (t0 + 2):
+                            not_worn = False
+                        elif row["Temperature Moving Average"] > earlier_window_temp:
+                            not_worn = False
+                        elif row["Temperature Moving Average"] < earlier_window_temp:
+                            not_worn = True
+                        elif row["Temperature Moving Average"] == earlier_window_temp:
+                            not_worn = not_worn
+                        else:
+                            not_worn = False
                 else:
                     not_worn = False
+            else:
+                if (row["Temperature Moving Average"] < t0) and accel_non_wear:
+                    not_worn = True
+                elif row["Temperature Moving Average"] >= t0:
+                    not_worn = False
+                else:
+                    if row["Temperature Moving Average"] > earlier_window_temp:
+                        not_worn = False
+                    elif row["Temperature Moving Average"] < earlier_window_temp:
+                        not_worn = True
+                    elif row["Temperature Moving Average"] == earlier_window_temp:
+                        not_worn = not_worn
+                    else:
+                        not_worn = False
             return pd.Series([not_worn, accel_non_wear])
 
 
@@ -525,6 +542,4 @@ class SensorScripts:
         binned_df["Device Worn?"] = np.invert(binned_df['Bin Not Worn?'])
         binned_df["End Time"] = binned_df.index + dt.timedelta(seconds=1/self.temperature_frequency)
 
-        final_df = binned_df[['End Time', 'Device Worn?', 'is_accel_nw']].copy()
-
-        return final_df
+        return binned_df

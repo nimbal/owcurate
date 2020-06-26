@@ -10,12 +10,10 @@ def export_nw_times(accel_path, temp_path):
     s.read_accelerometer(accel_path)
     s.read_temperature(temp_path)
     zhou_df = s.zhou_nonwear(use_updated_alg=True)
-    zhou_nw_starts = zhou_df.loc[zhou_df["Device Worn?"] == False].index.to_numpy()
-    zhou_nw_ends = zhou_df["End Time"].loc[zhou_df["Device Worn?"] == False].to_numpy()
-    zhou_accel_nw = zhou_df['is_accel_nw'].loc[zhou_df["Device Worn?"] == False].to_numpy()
-    del zhou_df
-
-    return zhou_nw_starts, zhou_nw_ends, zhou_accel_nw
+    zhou_df = zhou_df.loc[zhou_df["Device Worn?"] == False]
+    zhou_df['start_time'] = zhou_df.index.to_numpy()
+    zhou_df['end_time'] = zhou_df["End Time"].to_numpy()
+    return zhou_df
 
 
 def export_ga(data_pkg_dir):
@@ -30,7 +28,7 @@ def export_ga(data_pkg_dir):
     u, c = np.unique(accel_files + temp_files, return_counts=True)
     edf_files = u[c > 1]
 
-    export_dict = {'ID': [], 'start_time': [], 'end_time': [], 'location': [], 'duration': [], 'is_accel_nw': []}
+    export_dict = {'ID': [], 'start_time': [], 'end_time': [], 'location': [], 'duration': []}
 
     for f in tqdm(edf_files, desc='Reading and converting EDF Files', total=len(edf_files)):
         accel_path = os.path.join(accel_dir, f.replace(placeholder_txt, 'ACCELEROMETER'))
@@ -38,7 +36,9 @@ def export_ga(data_pkg_dir):
         location = f.split('.')[0].split('_')[-1]
         subject_id = f.split('.')[0].split('_')[2]
 
-        start, end, is_accel_nw = export_nw_times(accel_path, temp_path)
+        zhou_df = export_nw_times(accel_path, temp_path)
+        start = zhou_df['start_time']
+        end = zhou_df['end_time']
 
         if not len(start) == len(end):
             raise Exception('Start and end lengths do not match for zhou_df')
@@ -47,8 +47,8 @@ def export_ga(data_pkg_dir):
         export_dict['location'] += [location] * len(start)
         export_dict['start_time'].extend(start)
         export_dict['end_time'].extend(end)
+
         export_dict['duration'].extend(end - start)
-        export_dict['is_accel_nw'].extend(is_accel_nw)
 
     df = pd.DataFrame(export_dict)
     return df
@@ -100,6 +100,33 @@ def find_overlapping_nw_times(df):
 
     export_df = pd.DataFrame(export_dict)
     return export_df
+
+
+def read_test_data(folder):
+    num_files = [0, 1, 2, 3, 4, 5, 6, 7, 9]
+    final_subjects = []
+    final_starts = []
+    final_ends = []
+    mean_std = []
+    is_accel_nw = []
+
+    for i in num_files:
+        subject = 'Test%d' % i
+        accel_edf = os.path.join(folder, '%s_Accelerometer.EDF' % subject)
+        temp_edf = os.path.join(folder, "%s_Temperature.EDF" % subject)
+        logs = os.path.join(folder, '%s.csv')
+        zhou_df = export_nw_times(accel_edf, temp_edf)
+
+        final_starts.extend(zhou_df['start_time'])
+        final_ends.extend(zhou_df['end_time'])
+        final_subjects.extend([subject] * zhou_df.shape[0])
+        mean_std.extend(np.mean(zhou_df[['x-std', 'y-std', 'z-std']], axis=1))
+        is_accel_nw.extend(zhou_df['is_accel_nw'])
+
+    df = pd.DataFrame({'ID': final_subjects, 'start_time': final_starts, 'end_time': final_ends, 'location': ['N/A'] * len(final_starts), 'mean_std': mean_std, 'is_accel_nw': is_accel_nw})
+    df.to_csv('test_data.csv')
+    df = group_nw_times(df, min_duration=60)
+    df.to_csv('grouped_test_data.csv')
 
 
 #df = export_ga('/Users/matt/Documents/coding/nimbal/data/test')
