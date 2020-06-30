@@ -3,6 +3,8 @@ import os
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import datetime
 
 
 def export_nw_times(accel_path, temp_path):
@@ -128,7 +130,40 @@ def read_test_data(folder):
     df = group_nw_times(df, min_duration=60)
     df.to_csv('grouped_test_data.csv')
 
+def plot_nonwear(accel_path, temp_path, non_wear_csv):
+    zhou_df = export_nw_times(accel_path, temp_path)
 
+    accel = pyedflib.EdfReader(accel_path)
+    axis = 1
+    freq = accel.getSampleFrequency(axis)
+    data = accel.readSignal(axis)
+    start_time = accel.getStartdatetime() + datetime.timedelta(0)
+    end_time = start_time + datetime.timedelta(0, accel.getFileDuration())
+    accel.close()
+
+    df = pd.read_csv(non_wear_csv)
+    df['start_time'] = pd.to_datetime(df['start_time'])
+    df['end_time'] = pd.to_datetime(df['end_time'])
+    df = df.loc[(df['start_time'] >= start_time) & (df['end_time'] < end_time) & (df['ID'] == 'Test2')]
+
+    timestamps = np.asarray(pd.date_range(start_time, end_time, periods=zhou_df.shape[0]))
+
+    ax1 = plt.subplot(211)
+    plt.plot(timestamps, np.mean([zhou_df['x-std'], zhou_df['y-std'], zhou_df['z-std']], axis=0) )
+    for i, row in df.iterrows():
+        plt.axvspan( row['start_time'], row['end_time'], facecolor='b', alpha=0.5 )
+    ax2 = plt.subplot(212, sharex=ax1)
+    plt.plot(timestamps, zhou_df['Temperature Moving Average'])
+    for i, row in df.iterrows():
+        plt.axvspan( row['start_time'], row['end_time'], facecolor='b', alpha=0.5 )
+    plt.show()
+
+accel_path = r'E:\nimbal\data\Non-Wear Data\Test2_Accelerometer.EDF'
+temp_path = r'E:\nimbal\data\Non-Wear Data\Test2_Temperature.EDF'
+nw_csv = r'E:\nimbal\owcurate\SensorScripts\grouped_test_data.csv'
+plot_nonwear(accel_path,temp_path,nw_csv)
+
+"""
 #df = export_ga('/Users/matt/Documents/coding/nimbal/data/test')
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', 200)
@@ -138,3 +173,4 @@ df['end_time'] = pd.to_datetime(df['end_time'])
 df = group_nw_times(df)
 print(df)
 # df.to_csv('grouped_nw_GA_times.csv')
+"""
