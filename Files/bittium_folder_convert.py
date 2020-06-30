@@ -36,6 +36,10 @@ def bittium_folder_convert(input_dir, output_dir):
         update_header(accel_target, header_info)
         update_header(ecg_target, header_info)
 
+        update_accel_signal_header(accel_target)
+        update_ecg_signal_header(ecg_target)
+
+
     create_filelist_csv(output_dir)
     create_data_csv(output_dir)
 
@@ -67,7 +71,8 @@ def update_header(device_edf_filepath, header_info):
 
         start_date = header_info[88:168].rstrip().split(b' ')[1]
         recording_additional = header_info[88:168].rstrip().split(b' ')[-1]
-        recording_info = b' '.join([b'Startdate', start_date , b'X', b'X', b'X', recording_additional]).ljust(80)[:80]
+        equipment =  b'Bittium_' + dict([x.split(b'=') for x in recording_additional.split(b'_')])[b'SER']
+        recording_info = b' '.join([b'Startdate', start_date , b'X', b'X', equipment, b'X']).ljust(80)[:80]
         reserved = b'EDF+C'.ljust(44)[:44]
 
         header_info = header_info[:8] + patient_info + header_info[88:] # updates patient info
@@ -78,6 +83,28 @@ def update_header(device_edf_filepath, header_info):
 
         f.seek(0)
         f.write(header_info)
+
+def update_accel_signal_header(device_edf_filepath):
+    with open(device_edf_filepath, "r+b") as f:
+        output_header = f.read(256)
+        num_signals = int(output_header[-4:])
+
+        signal_label = b'Accelerometer x'.ljust(16) + b'Accelerometer y'.ljust(16) + b'Accelerometer z'.ljust(16)
+        f.seek(256)
+        f.write(signal_label)
+
+        transducer_type = b'accelerometer'.ljust(80) + b'accelerometer'.ljust(80) + b'accelerometer'.ljust(80)
+        f.seek(256+16*num_signals)
+        f.write(transducer_type)
+
+def update_ecg_signal_header(device_edf_filepath):
+    with open(device_edf_filepath, "r+b") as f:
+        output_header = f.read(256)
+        num_signals = int(output_header[-4:])
+
+        transducer_type = b'FastFix electrode'.ljust(80)
+        f.seek(256+16*num_signals)
+        f.write(transducer_type)
 
 
 def create_filelist_csv(datapkg_dir):
@@ -114,7 +141,7 @@ def create_filelist_csv(datapkg_dir):
              'DATE': dates,
              'FILENAME': filenames
              })
-
+        file_list_df = file_list_df.sort_values(by=["SUBJECT"], ignore_index=True)
         filelist_path = os.path.join(sensor_dir, 'OND06_ALL_01_SNSR_BITF_%s_2020MAY31_FILELIST.csv' % sensor_dir.split(os.sep)[-2].upper())
         file_list_df.to_csv(filelist_path, index=False)
 
@@ -152,9 +179,7 @@ def create_data_csv(datapkg_dir):
         sites.append(f_split[1])
         dates.append(header['startdate'].strftime("%Y%b%d").upper())
         start_times.append(header['startdate'].strftime("%H:%M:%S"))
-
-        recording_additional_dict = dict([attr.split('=') for attr in accel_edf_header['recording_additional'].split('_')]) if accel_edf_header['recording_additional'] else None
-        device_ids.append(recording_additional_dict['SER'] if recording_additional_dict else 'N/A')
+        device_ids.append(accel_edf_header['equipment'])
 
         duration = datetime.timedelta(seconds=header['Duration']())
         collection_duration_datetime.append(str(isodate.duration_isoformat(duration, 'P%dDT%HH%MM%SS')))
@@ -170,6 +195,7 @@ def create_data_csv(datapkg_dir):
                             "COLLECTION_DURATION": collection_duration_datetime,
                             "ACCELEROMETER_SAMPLE_RATE": accelerometer_sample_rate,
                             "ECG_SAMPLE_RATE": ecg_sample_rate})
+    summary_metrics_list = summary_metrics_list.sort_values(by=["SUBJECT"], ignore_index=True)
     summary_path = os.path.join(datapkg_dir, 'OND06_ALL_01_SNSR_BITF_2020MAY31_DATA.csv')
     summary_metrics_list.to_csv(summary_path, index=False)
 
@@ -177,5 +203,5 @@ def create_data_csv(datapkg_dir):
 
 input_dir=r'E:\nimbal\data\OND06\raw_all\Bittium'
 output_dir=r'E:\nimbal\data\OND06\OND06_ALL_01_SNSR_BITF_2020MAY31_DATAPKG'
-bittium_folder_convert(input_dir, output_dir)
+create_data_csv( output_dir)
 
