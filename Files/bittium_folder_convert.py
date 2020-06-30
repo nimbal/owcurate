@@ -3,6 +3,7 @@ from pathlib import Path
 import datetime
 import isodate
 import pandas as pd
+import numpy as np
 import pyedflib
 import os
 from tqdm import tqdm
@@ -39,11 +40,8 @@ def bittium_folder_convert(input_dir, output_dir):
         update_accel_signal_header(accel_target)
         update_ecg_signal_header(ecg_target)
 
-
     create_filelist_csv(output_dir)
     create_data_csv(output_dir)
-
-
 
 
 def update_filename(filename, device):
@@ -71,18 +69,19 @@ def update_header(device_edf_filepath, header_info):
 
         start_date = header_info[88:168].rstrip().split(b' ')[1]
         recording_additional = header_info[88:168].rstrip().split(b' ')[-1]
-        equipment =  b'Bittium_' + dict([x.split(b'=') for x in recording_additional.split(b'_')])[b'SER']
-        recording_info = b' '.join([b'Startdate', start_date , b'X', b'X', equipment, b'X']).ljust(80)[:80]
+        equipment = b'Bittium_' + dict([x.split(b'=') for x in recording_additional.split(b'_')])[b'SER']
+        recording_info = b' '.join([b'Startdate', start_date, b'X', b'X', equipment, b'X']).ljust(80)[:80]
         reserved = b'EDF+C'.ljust(44)[:44]
 
-        header_info = header_info[:8] + patient_info + header_info[88:] # updates patient info
-        header_info = header_info[:88] + recording_info + header_info[168:] # updates recording additional
-        header_info = header_info[:184] + output_header[184:192] + header_info[192:] # updates counted bytes in headers
-        header_info = header_info[:192] + reserved + header_info[236:] # updates reserved
-        header_info = header_info[:248]  + output_header[-8:] # updates number of channels
+        header_info = header_info[:8] + patient_info + header_info[88:]  # updates patient info
+        header_info = header_info[:88] + recording_info + header_info[168:]  # updates recording additional
+        header_info = header_info[:184] + output_header[184:192] + header_info[192:]  # updates counted bytes in headers
+        header_info = header_info[:192] + reserved + header_info[236:]  # updates reserved
+        header_info = header_info[:248] + output_header[-8:]  # updates number of channels
 
         f.seek(0)
         f.write(header_info)
+
 
 def update_accel_signal_header(device_edf_filepath):
     with open(device_edf_filepath, "r+b") as f:
@@ -94,8 +93,9 @@ def update_accel_signal_header(device_edf_filepath):
         f.write(signal_label)
 
         transducer_type = b'accelerometer'.ljust(80) + b'accelerometer'.ljust(80) + b'accelerometer'.ljust(80)
-        f.seek(256+16*num_signals)
+        f.seek(256 + 16 * num_signals)
         f.write(transducer_type)
+
 
 def update_ecg_signal_header(device_edf_filepath):
     with open(device_edf_filepath, "r+b") as f:
@@ -103,7 +103,7 @@ def update_ecg_signal_header(device_edf_filepath):
         num_signals = int(output_header[-4:])
 
         transducer_type = b'FastFix electrode'.ljust(80)
-        f.seek(256+16*num_signals)
+        f.seek(256 + 16 * num_signals)
         f.write(transducer_type)
 
 
@@ -187,21 +187,51 @@ def create_data_csv(datapkg_dir):
         ecg_sample_rate.append(ecg_edf_header['SignalHeaders'][0]['sample_rate'] if ecg_edf_header else 'N/A')
 
     summary_metrics_list = pd.DataFrame({"SUBJECT": subjects,
-                            "VISIT": visits,
-                            "SITE": sites,
-                            "DATE": dates,
-                            "DEVICE_ID": device_ids, # should be in the header
-                            "START_TIME": start_times,
-                            "COLLECTION_DURATION": collection_duration_datetime,
-                            "ACCELEROMETER_SAMPLE_RATE": accelerometer_sample_rate,
-                            "ECG_SAMPLE_RATE": ecg_sample_rate})
+                                         "VISIT": visits,
+                                         "SITE": sites,
+                                         "DATE": dates,
+                                         "DEVICE_ID": device_ids,  # should be in the header
+                                         "START_TIME": start_times,
+                                         "COLLECTION_DURATION": collection_duration_datetime,
+                                         "ACCELEROMETER_SAMPLE_RATE": accelerometer_sample_rate,
+                                         "ECG_SAMPLE_RATE": ecg_sample_rate})
     summary_metrics_list = summary_metrics_list.sort_values(by=["SUBJECT"], ignore_index=True)
     summary_path = os.path.join(datapkg_dir, 'OND06_ALL_01_SNSR_BITF_2020MAY31_DATA.csv')
     summary_metrics_list.to_csv(summary_path, index=False)
 
 
+def merge_files(edf_path1, edf_path2):
+    # checks if headers of both files are the same
+    file1 = pyedflib.EdfReader(edf_path1)
+    file2 = pyedflib.EdfReader(edf_path2)
+    assert file1.getPatientCode() == file2.getPatientCode()
+    assert file1.getSignalHeaders() == file2.getSignalHeaders()
 
-input_dir=r'E:\nimbal\data\OND06\raw_all\Bittium'
-output_dir=r'E:\nimbal\data\OND06\OND06_ALL_01_SNSR_BITF_2020MAY31_DATAPKG'
-create_data_csv( output_dir)
+    first = file1 if file1.getStartdatetime() < file2.getStartdatetime() else file2
+    second = file1 if not file1.getStartdatetime() < file2.getStartdatetime() else file2
+    num_sigs = first.signals_in_file
 
+    new_edf = pyedflib.EdfWriter('test.edf', num_sigs)
+    new_edf.setHeader(first.getHeader())
+
+    samples = []
+
+    for i in range(num_sigs):
+        dp_between = ((first.getStartdatetime() + datetime.timedelta(seconds=first.getFileDuration())) - second.getStartdatetime()) * first.getSampleFrequency(i)
+        begin = first.readSignal(i)
+        fill = np.array([0] * dp_between)
+        end = second.readSignal(i)
+        new_channel = np.concatenate([begin, fill, end])
+
+        samples.append(new_channel)
+        new_edf.setSignalHeader(first.getSignalHeader(i))
+
+    new_edf.writeSamples(samples)
+    new_edf.close()
+
+
+"""
+input_dir = r'E:\nimbal\data\OND06\raw_all\Bittium'
+output_dir = r'E:\nimbal\data\OND06\OND06_ALL_01_SNSR_BITF_2020MAY31_DATAPKG'
+create_data_csv(output_dir)
+"""
