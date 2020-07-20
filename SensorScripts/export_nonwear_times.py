@@ -3,6 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 from tqdm import tqdm
+from pathlib import Path
 import matplotlib.pyplot as plt
 import datetime
 
@@ -130,7 +131,8 @@ def read_test_data(folder):
     df = group_nw_times(df, min_duration=60)
     df.to_csv('grouped_test_data.csv')
 
-def plot_nonwear(accel_path, temp_path, non_wear_csv):
+
+def plot_nonwear(accel_path, temp_path, non_wear_csv=None):
     zhou_df = export_nw_times(accel_path, temp_path)
 
     accel = pyedflib.EdfReader(accel_path)
@@ -141,30 +143,129 @@ def plot_nonwear(accel_path, temp_path, non_wear_csv):
     end_time = start_time + datetime.timedelta(0, accel.getFileDuration())
     accel.close()
 
-    df = pd.read_csv(non_wear_csv)
-    df['start_time'] = pd.to_datetime(df['start_time'])
-    df['end_time'] = pd.to_datetime(df['end_time'])
-    df = df.loc[(df['start_time'] >= start_time) & (df['end_time'] < end_time) & (df['ID'] == 'Test2')]
+    if non_wear_csv is not None:
+        df = pd.read_csv(non_wear_csv)
+        df['start_time'] = pd.to_datetime(df['start_time'])
+        df['end_time'] = pd.to_datetime(df['end_time'])
+        df = df.loc[(df['start_time'] >= start_time) & (df['end_time'] < end_time) & (df['ID'] == 'Test2')]
 
     timestamps = np.asarray(pd.date_range(start_time, end_time, periods=zhou_df.shape[0]))
 
     ax1 = plt.subplot(211)
-    plt.plot(timestamps, np.mean([zhou_df['x-std'], zhou_df['y-std'], zhou_df['z-std']], axis=0) )
-    for i, row in df.iterrows():
-        plt.axvspan( row['start_time'], row['end_time'], facecolor='b', alpha=0.5 )
+    ax1.set_title('Moving Average Standard Deviation')
+    plt.plot(timestamps, np.mean([zhou_df['x-std'], zhou_df['y-std'], zhou_df['z-std']], axis=0))
+
+    if non_wear_csv is not None:
+        for i, row in df.iterrows():
+            plt.axvspan(row['start_time'], row['end_time'], facecolor='b', alpha=0.5)
+
     ax2 = plt.subplot(212, sharex=ax1)
+    ax2.set_title('Moving Average Temperature')
     plt.plot(timestamps, zhou_df['Temperature Moving Average'])
-    for i, row in df.iterrows():
-        plt.axvspan( row['start_time'], row['end_time'], facecolor='b', alpha=0.5 )
+
+    if non_wear_csv is not None:
+        for i, row in df.iterrows():
+            plt.axvspan(row['start_time'], row['end_time'], facecolor='b', alpha=0.5)
     plt.show()
 
-accel_path = r'E:\nimbal\data\Non-Wear Data\Test2_Accelerometer.EDF'
-temp_path = r'E:\nimbal\data\Non-Wear Data\Test2_Temperature.EDF'
-nw_csv = r'E:\nimbal\owcurate\SensorScripts\grouped_test_data.csv'
-plot_nonwear(accel_path,temp_path,nw_csv)
+
+def find_dp(path, timestamp_str, length, axis=1):
+    """
+    Gets start and end time based on a timestamp and length(# data points)
+    """
+    accel_file = pyedflib.EdfReader(path)
+    time_delta = pd.to_timedelta(
+        1 / accel_file.getSampleFrequency(axis), unit='s')
+    start = int((pd.to_datetime(timestamp_str) -
+                 accel_file.getStartdatetime()) / time_delta)
+    end = int(start + pd.to_timedelta(length, unit='s') / time_delta)
+    accel_file.close()
+    return start, end
+
+
+def export_nonwear(accel_path, temp_path, non_wear_csv, subj_id=None):
+    raw_data = {'accel_x': [], 'accel_y': [], 'accel_z': [], 'temp': []}
+
+    # read accelerometer
+    accel = pyedflib.EdfReader(accel_path)
+    accel_freq = accel.samplefrequency(0)
+    accel_start = accel.getStartdatetime()
+    accel_end = accel_start + datetime.timedelta(0, accel.getFileDuration())
+    raw_data['accel_x'].extend(accel.readSignal(0))
+    raw_data['accel_y'].extend(accel.readSignal(1))
+    raw_data['accel_z'].extend(accel.readSignal(2))
+    assert len(set([len(raw_data['accel_x']), len(raw_data['accel_y']), len(raw_data['accel_z'])])) <= 1  # check if all lists are equal lengths
+    accel.close()
+
+    # read temperature
+    temp = pyedflib.EdfReader(temp_path)
+    temp_freq = temp.getNSamples()[0] / temp.getFileDuration()
+    temp_start = temp.getStartdatetime()
+    temp_sig = list(np.repeat(temp.readSignal(0), int(accel_freq / temp_freq)))
+    pad_temp_sig = (temp_sig + [np.nan] * len(raw_data['accel_x']))[:len(raw_data['accel_x'])]
+    raw_data['temp'].extend(pad_temp_sig)
+    temp.close()
+    assert len(raw_data['temp']) == len(raw_data['accel_x'])
+    assert accel_start == temp_start
+    # get subject id
+    if subj_id is None:
+        subj_id = int(os.path.basename(accel_path).split("_")[2])
+
+    # reads nonwear into a dataframe
+    df = pd.read_csv(non_wear_csv)
+    df['start_time'] = pd.to_datetime(df['start_time'])
+    df['end_time'] = pd.to_datetime(df['end_time'])
+    df['plot_num'] = df.index
+    df = df.loc[(df['start_time'] >= accel_start) & (df['end_time'] < accel_end) & (df['ID'] == subj_id)]
+
+    timestamps = np.asarray(pd.date_range(accel_start, accel_end, periods=len(raw_data['accel_x'])))
+    raw_data_df = pd.DataFrame(raw_data)
+
+    for i, nw_row in tqdm(df.iterrows(), total=df.shape[0]):
+        pad_time_sec = 300
+        pad_nw_start = accel_start if (nw_row['start_time'] - datetime.timedelta(seconds=pad_time_sec)) < accel_start else (nw_row['start_time'] - datetime.timedelta(minutes=5))
+        pad_nw_end = accel_end if (nw_row['end_time'] + datetime.timedelta(seconds=pad_time_sec)) > accel_end else (nw_row['end_time'] + datetime.timedelta(minutes=5))
+
+        pad_start_i = int((pad_nw_start - accel_start).total_seconds() * accel_freq)
+        pad_end_i = int(pad_start_i + (pad_nw_end - pad_nw_start).total_seconds() * accel_freq)
+
+        start_i = int((nw_row['start_time'] - accel_start).total_seconds() * accel_freq)
+        end_i = int(start_i + (nw_row['end_time'] - nw_row['start_time']).total_seconds() * accel_freq)
+
+        fig, [ax1, ax2, ax3, ax4] = plt.subplots(4, 1, sharex=True)
+        ax1.set_title('Accel X')
+        ax1.plot(timestamps[pad_start_i:start_i], raw_data['accel_x'][pad_start_i:start_i], 'r-', label='padded signal')
+        ax1.plot(timestamps[start_i:end_i], raw_data['accel_x'][start_i:end_i], 'b-', label='non wear signal')
+        ax1.legend(loc='upper left')
+        ax1.plot(timestamps[end_i:pad_end_i], raw_data['accel_x'][end_i:pad_end_i], 'r-', label='padded signal')
+        ax2.set_title('Accel Y')
+        ax2.plot(timestamps[pad_start_i:start_i], raw_data['accel_y'][pad_start_i:start_i], 'r-', label='padded signal')
+        ax2.plot(timestamps[start_i:end_i], raw_data['accel_y'][start_i:end_i], 'b-', label='non wear signal')
+        ax2.plot(timestamps[end_i:pad_end_i], raw_data['accel_y'][end_i:pad_end_i], 'r-', label='padded signal')
+        ax3.set_title('Accel Z')
+        ax3.plot(timestamps[pad_start_i:start_i], raw_data['accel_z'][pad_start_i:start_i], 'r-', label='padded signal')
+        ax3.plot(timestamps[start_i:end_i], raw_data['accel_z'][start_i:end_i], 'b-', label='non wear signal')
+        ax3.plot(timestamps[end_i:pad_end_i], raw_data['accel_z'][end_i:pad_end_i], 'r-', label='padded signal')
+        ax4.set_title('Temp')
+        ax4.plot(timestamps[pad_start_i:start_i], raw_data['temp'][pad_start_i:start_i], 'r-', label='padded signal')
+        ax4.plot(timestamps[start_i:end_i], raw_data['temp'][start_i:end_i], 'b-', label='non wear signal')
+        ax4.plot(timestamps[end_i:pad_end_i], raw_data['temp'][end_i:pad_end_i], 'r-', label='padded signal')
+
+        title = 'OND06_SBH_%d_PLOT%d' % (subj_id, i)
+        folder = 'non_wear_data'
+        Path(folder).mkdir(parents=True, exist_ok=True)
+        fig.savefig(os.path.join(folder, '%s.png' % title))
+        raw_data_df.iloc[start_i:end_i].to_csv(os.path.join(folder, '%s.csv' % title), index=False)
+        plt.close(fig)
+
+
+accel_path = r'/Volumes/Gateway/data/OND06_SBH_1039_GNAC_ACCELEROMETER_LAnkle.edf'
+temp_path = r'/Volumes/Gateway/data/OND06_SBH_1039_GNAC_TEMPERATURE_LAnkle.edf'
+nw_csv = r'/Users/matthewwong/Documents/coding/nimbal/owcurate/SensorScripts/grouped_nw_GA_times.csv'
+export_nonwear(accel_path, temp_path, nw_csv)
 
 """
-#df = export_ga('/Users/matt/Documents/coding/nimbal/data/test')
+# df = export_ga('/Users/matt/Documents/coding/nimbal/data/test')
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', 200)
 df = pd.read_csv('NW_GA.csv')
