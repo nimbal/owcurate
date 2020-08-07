@@ -83,11 +83,12 @@ def group_nw_times(export_ga_df, group_time_sec=10, min_duration=300):
 
 def find_overlapping_nw_times(df):
     export_dict = {'ID': [], 'start_time': [], 'end_time': [], 'location': [], 'duration': []}
-    df['start_time'] = pd.to_datetime(df['start_time'])
-    df['end_time'] = pd.to_datetime(df['end_time'])
+
+    df['start_time'] = pd.to_datetime(df['start_time'], format='%Y-%m-%dT%X', errors='coerce')
+    df['end_time'] = pd.to_datetime(df['end_time'], format='%Y-%m-%dT%X', errors='coerce')
     for subj_id, subject_df in df.groupby('ID'):
         subject_df = subject_df.sort_values(by=['start_time'], ignore_index=True)
-        subject_df['overlaps'] = subject_df['start_time'] < subject_df['end_time'].shift()
+        subject_df['overlaps'] = (subject_df['start_time'] < subject_df['end_time'].shift()) & (subject_df['start_time'].shift() < subject_df['end_time'])
         subject_df['intersect_id'] = (((subject_df['overlaps'].shift(-1) == True) & (subject_df['overlaps'] == False)) |
                                       ((subject_df['overlaps'].shift() == True) & (subject_df['overlaps'] == False))).cumsum()
 
@@ -95,11 +96,38 @@ def find_overlapping_nw_times(df):
             if not intersect['overlaps'].any():
                 continue
             intersect = intersect.drop_duplicates(subset=['location'], keep='first')
-            export_dict['ID'].append(intersect['ID'].iloc[0])
-            export_dict['start_time'].append(intersect['start_time'].max())
-            export_dict['end_time'].append(intersect['end_time'].min())
-            export_dict['location'].append(sorted(intersect['location'].to_numpy()))
-            export_dict['duration'].append((intersect['end_time'].min() - intersect['start_time'].max()) / np.timedelta64(1, 's'))
+            duration = (intersect['end_time'].min() - intersect['start_time'].max()) / np.timedelta64(1, 's')
+
+            # can't find common length of length of time among grouped intersects
+            # so tries to group within the intersect
+            if duration < 0:
+                start = intersect.iloc[0]
+                intersect
+                for i, row in intersect.iterrows():
+                    overlap_start = (row['start_time'] < start['end_time']) & (start['start_time'] < row['end_time'])
+                    # check if there are any overlaps and if there are more than 1 overlapped location
+                    if not overlap_start and (i - start.name) > 1:
+                        export_dict['ID'].append(intersect['ID'].iloc[0])
+                        export_dict['start_time'].append(intersect['start_time'].iloc[start.name:i].max())
+                        export_dict['end_time'].append(intersect['end_time'].iloc[start.name:i].min())
+                        export_dict['location'].append(sorted(intersect['location'].iloc[start.name:i].to_numpy()))
+                        export_dict['duration'].append((intersect['end_time'].iloc[start.name:i].min() - intersect['start_time'].iloc[start.name:i].max()) / np.timedelta64(1, 's'))
+                        start = intersect.iloc[i]
+                # checks if > 1
+                i = intersect.shape[0]
+                if (i - start.name) > 1:
+                    export_dict['ID'].append(intersect['ID'].iloc[0])
+                    export_dict['start_time'].append(intersect['start_time'].iloc[start.name:i].max())
+                    export_dict['end_time'].append(intersect['end_time'].iloc[start.name:i].min())
+                    export_dict['location'].append(sorted(intersect['location'].iloc[start.name:i].to_numpy()))
+                    export_dict['duration'].append((intersect['end_time'].iloc[start.name:i].min() - intersect['start_time'].iloc[start.name:i].max()) / np.timedelta64(1, 's'))
+
+            else:
+                export_dict['ID'].append(intersect['ID'].iloc[0])
+                export_dict['start_time'].append(intersect['start_time'].max())
+                export_dict['end_time'].append(intersect['end_time'].min())
+                export_dict['location'].append(sorted(intersect['location'].to_numpy()))
+                export_dict['duration'].append(duration)
 
     export_df = pd.DataFrame(export_dict)
     return export_df
@@ -220,6 +248,8 @@ def export_nonwear(accel_path, temp_path, non_wear_csv, subj_id=None):
 
     timestamps = np.asarray(pd.date_range(accel_start, accel_end, periods=len(raw_data['accel_x'])))
     raw_data_df = pd.DataFrame(raw_data)
+    folder = 'non_wear_data'
+    Path(folder).mkdir(parents=True, exist_ok=True)
 
     for i, nw_row in tqdm(df.iterrows(), total=df.shape[0]):
         pad_time_sec = 300
@@ -251,18 +281,19 @@ def export_nonwear(accel_path, temp_path, non_wear_csv, subj_id=None):
         ax4.plot(timestamps[start_i:end_i], raw_data['temp'][start_i:end_i], 'b-', label='non wear signal')
         ax4.plot(timestamps[end_i:pad_end_i], raw_data['temp'][end_i:pad_end_i], 'r-', label='padded signal')
 
-        title = 'OND06_SBH_%d_PLOT%d' % (subj_id, i)
-        folder = 'non_wear_data'
-        Path(folder).mkdir(parents=True, exist_ok=True)
+        title = 'OND06_SBH_%d_PLOT%d' % (subj_id, nw_row['plot_num'])
         fig.savefig(os.path.join(folder, '%s.png' % title))
         raw_data_df.iloc[start_i:end_i].to_csv(os.path.join(folder, '%s.csv' % title), index=False)
         plt.close(fig)
 
 
-accel_path = r'/Volumes/Gateway/data/OND06_SBH_1039_GNAC_ACCELEROMETER_LAnkle.edf'
-temp_path = r'/Volumes/Gateway/data/OND06_SBH_1039_GNAC_TEMPERATURE_LAnkle.edf'
-nw_csv = r'/Users/matthewwong/Documents/coding/nimbal/owcurate/SensorScripts/grouped_nw_GA_times.csv'
-export_nonwear(accel_path, temp_path, nw_csv)
+accel_path = r'/Volumes/Gateway/data/OND06_SBH_1270_GNAC_ACCELEROMETER_LAnkle.edf'
+temp_path = r'/Volumes/Gateway/data/OND06_SBH_1270_GNAC_TEMPERATURE_LAnkle.edf'
+nw_csv = r'/Users/matthewwong/Documents/coding/nimbal/owcurate/SensorScripts/nonwear_periods.csv'
+nw_csv = r'ReMiNDDNonWearReformatted_vt_7AUG2020.csv'
+df = pd.read_csv(nw_csv)
+find_overlapping_nw_times(df).to_csv('overlapped_nw_times.csv')
+#export_nonwear(accel_path, temp_path, nw_csv)
 
 """
 # df = export_ga('/Users/matt/Documents/coding/nimbal/data/test')
