@@ -147,3 +147,65 @@ plt.title("Temperature 10 Minutes after End")
 plt.xlabel("Ending Temperature")
 plt.ylabel("Temperature Change")
 plt.show()
+
+# Create Histograms
+plt.figure()
+fig, ((ax,ax1)) = plt.subplots(2, 2)#, gridspec_kw={'height_ratios': [3, 3]})
+fig.suptitle("Temperature N Minutes After Start")
+counts, bins, patches = ax[0].hist(df_1min["TEMP 1 MINS AFTER START"],range(int(np.min(df_1min["TEMP 1 MINS AFTER START"])),int(np.max(df_1min["TEMP 1 MINS AFTER START"]))),edgecolor = "black", linewidth = 1.2)
+ax[0].set_xticks(bins)
+ax[0].vlines(np.average(df_1min["TEMP 1 MINS AFTER START"]), 0, np.max(counts), linestyles = "dashed", colors = "orange")
+ax[0].set_title("1 MIN")
+counts, bins, patches = ax[1].hist(df_3min["TEMP 3 MINS AFTER START"],range(int(np.min(df_3min["TEMP 3 MINS AFTER START"])),int(np.max(df_3min["TEMP 3 MINS AFTER START"]))),edgecolor = "black", linewidth = 1.2)
+ax[1].set_xticks(bins)
+ax[1].vlines(np.average(df_3min["TEMP 3 MINS AFTER START"]), 0, np.max(counts), linestyles = "dashed", colors = "orange")
+ax[1].set_title("3 MINS")
+counts, bins, patches = ax1[0].hist(df_5min["TEMP 5 MINS AFTER START"],range(int(np.min(df_5min["TEMP 5 MINS AFTER START"])),int(np.max(df_5min["TEMP 5 MINS AFTER START"]))),edgecolor = "black", linewidth = 1.2)
+ax1[0].set_xticks(bins)
+ax1[0].vlines(np.average(df_5min["TEMP 5 MINS AFTER START"]), 0, np.max(counts), linestyles = "dashed", colors = "orange")
+ax1[0].set_title("5 MINS")
+counts, bins, patches = ax1[1].hist(df_10min["TEMP 10 MINS AFTER START"],range(int(np.min(df_10min["TEMP 10 MINS AFTER START"])),int(np.max(df_10min["TEMP 10 MINS AFTER START"]))),edgecolor = "black", linewidth = 1.2)
+ax1[1].set_xticks(bins)
+ax1[1].vlines(np.average(df_10min["TEMP 10 MINS AFTER START"]), 0, np.max(counts), linestyles = "dashed", colors = "orange")
+ax1[1].set_title("10 MINS")
+
+ax1[0].set_xlabel("Temperature")
+ax1[1].set_xlabel("Temperature")
+
+
+## Create Individual Plots for each
+
+# 1 min
+plt.figure()
+counts, bins, patches = plt.hist(df_1min["TEMP 1 MINS AFTER START"],range(int(np.min(df_1min["TEMP 1 MINS AFTER START"])),int(np.max(df_1min["TEMP 1 MINS AFTER START"]))),edgecolor = "black", linewidth = 1.2)
+plt.xticks(bins)
+plt.vlines(np.average(df_1min["TEMP 1 MINS AFTER START"]), 0, np.max(counts), linestyles = "dashed", colors = "orange")
+plt.title("Temperature 1 Minutes after Start")
+plt.xlabel("Temperature")
+
+
+# 3 Min
+plt.figure()
+counts, bins, patches = plt.hist(df_3min["TEMP 3 MINS AFTER START"],range(int(np.min(df_3min["TEMP 3 MINS AFTER START"])),int(np.max(df_3min["TEMP 3 MINS AFTER START"]))),edgecolor = "black", linewidth = 1.2)
+plt.xticks(bins)
+plt.vlines(np.average(df_3min["TEMP 3 MINS AFTER START"]), 0, np.max(counts), linestyles = "dashed", colors = "orange")
+plt.title("Temperature 3 Minutes after Start")
+plt.xlabel("Temperature")
+
+
+# 5 Min
+plt.figure()
+counts, bins, patches = plt.hist(df_5min["TEMP 5 MINS AFTER START"],range(int(np.min(df_5min["TEMP 5 MINS AFTER START"])),int(np.max(df_5min["TEMP 5 MINS AFTER START"]))),edgecolor = "black", linewidth = 1.2)
+plt.xticks(bins)
+plt.vlines(np.average(df_5min["TEMP 5 MINS AFTER START"]), 0, np.max(counts), linestyles = "dashed", colors = "orange")
+plt.title("Temperature 5 Minutes after Start")
+plt.xlabel("Temperature")
+
+
+# 10 Min
+plt.figure()
+counts, bins, patches = plt.hist(df_10min["TEMP 10 MINS AFTER START"],range(int(np.min(df_10min["TEMP 10 MINS AFTER START"])),int(np.max(df_10min["TEMP 10 MINS AFTER START"]))),edgecolor = "black", linewidth = 1.2)
+plt.xticks(bins)
+plt.vlines(np.average(df_10min["TEMP 10 MINS AFTER START"]), 0, np.max(counts), linestyles = "dashed", colors = "orange")
+plt.title("Temperature 10 Minutes after Start")
+plt.xlabel("Temperature")
