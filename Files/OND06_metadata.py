@@ -48,7 +48,7 @@ def create_filelist_csv(datapkg_dir):
              'FILENAME': filenames
              })
 
-        file_list_df = file_list_df.sort_values(by=["SUBJECT", "VISIT"], ignore_index=True)
+        file_list_df = file_list_df.sort_values(by=["SUBJECT", "VISIT", "FILENAME"], ignore_index=True)
         filelist_path = os.path.join(sensor_dir, 'OND06_ALL_01_SNSR_BITF_%s_2020MAY31_FILELIST.csv' % sensor_dir.split(os.sep)[-2].upper())
         file_list_df.to_csv(filelist_path, index=False)
 
@@ -67,7 +67,7 @@ def create_data_csv(datapkg_dir):
     visits = []
     sites = []
     dates = []
-    # fileparts = []
+    fileparts = []
     device_ids = []
     start_times = []
     collection_duration_datetime = []
@@ -94,7 +94,7 @@ def create_data_csv(datapkg_dir):
         visits.append('01')
         sites.append(f_split[1])
         dates.append(header['startdate'].strftime("%Y%b%d").upper())
-        # fileparts.append(f_split[5] if len(f_split) > 5 else '')
+        fileparts.append(f_split[5] if len(f_split) > 5 else '')
         start_times.append(header['startdate'].strftime("%H:%M:%S"))
         device_ids.append(accel_edf_header['equipment'].split(' ')[1])
 
@@ -107,13 +107,13 @@ def create_data_csv(datapkg_dir):
                                          "VISIT": visits,
                                          "SITE": sites,
                                          "DATE": dates,
-                                         # "FILEPART": fileparts,
+                                         "FILEPART": fileparts,
                                          "DEVICE_ID": device_ids,  # should be in the header
                                          "START_TIME": start_times,
                                          "COLLECTION_DURATION": collection_duration_datetime,
                                          "ACCELEROMETER_SAMPLE_RATE": accelerometer_sample_rate,
                                          "ECG_SAMPLE_RATE": ecg_sample_rate})
 
-    summary_metrics_list = summary_metrics_list.sort_values(by=["SUBJECT", "VISIT"], ignore_index=True)
+    summary_metrics_list = summary_metrics_list.sort_values(by=["SUBJECT", "VISIT", "FILEPART"], ignore_index=True)
     summary_path = os.path.join(datapkg_dir, 'OND06_ALL_01_SNSR_BITF_2020MAY31_DATA.csv')
     summary_metrics_list.to_csv(summary_path, index=False)
