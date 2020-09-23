@@ -71,8 +71,8 @@ def create_data_csv(datapkg_dir):
     device_ids = []
     start_times = []
     collection_duration_datetime = []
-    accelerometer_sample_rate = []
-    ecg_sample_rate = []
+    # accelerometer_sample_rate = []
+    # ecg_sample_rate = []
 
     filenum = 0
 
@@ -100,8 +100,8 @@ def create_data_csv(datapkg_dir):
 
         duration = datetime.timedelta(seconds=header['Duration'])
         collection_duration_datetime.append(str(isodate.duration_isoformat(duration, 'P%dDT%HH%MM%SS')))
-        accelerometer_sample_rate.append(accel_edf_header['SignalHeaders'][0]['sample_rate'] if accel_edf_header else 'N/A')
-        ecg_sample_rate.append(ecg_edf_header['SignalHeaders'][0]['sample_rate'] if ecg_edf_header else 'N/A')
+        # accelerometer_sample_rate.append(accel_edf_header['SignalHeaders'][0]['sample_rate'] if accel_edf_header else 'N/A')
+        # ecg_sample_rate.append(ecg_edf_header['SignalHeaders'][0]['sample_rate'] if ecg_edf_header else 'N/A')
 
     summary_metrics_list = pd.DataFrame({"SUBJECT": subjects,
                                          "VISIT": visits,
@@ -110,9 +110,9 @@ def create_data_csv(datapkg_dir):
                                          "FILEPART": fileparts,
                                          "DEVICE_ID": device_ids,  # should be in the header
                                          "START_TIME": start_times,
-                                         "COLLECTION_DURATION": collection_duration_datetime,
-                                         "ACCELEROMETER_SAMPLE_RATE": accelerometer_sample_rate,
-                                         "ECG_SAMPLE_RATE": ecg_sample_rate})
+                                         "COLLECTION_DURATION": collection_duration_datetime})
+                                         #"ACCELEROMETER_SAMPLE_RATE": accelerometer_sample_rate,
+                                         #"ECG_SAMPLE_RATE": ecg_sample_rate
 
     summary_metrics_list = summary_metrics_list.sort_values(by=["SUBJECT", "VISIT", "FILEPART"], ignore_index=True)
     summary_path = os.path.join(datapkg_dir, 'OND06_ALL_01_SNSR_BITF_2020MAY31_DATA.csv')
