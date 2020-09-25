@@ -12,7 +12,7 @@ from folder_convert_script import folder_convert
 # ======================================== FUNCTION =========================================
 def folder_convert_gui(input='', output='', device_edf = False, correct_drift=True, overwrite=False, quiet=False):
     """
-        The folder_convert_gui function takes a creates a graphical interface for the folder_conver() function
+        The folder_convert_gui function takes a creates a graphical interface for the folder_convert() function
 
         Args:
             input: string

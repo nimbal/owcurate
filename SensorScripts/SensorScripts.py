@@ -128,7 +128,7 @@ class SensorScripts:
 
         self.temperature = pyedflib.EdfReader(path_to_temperature)
         self.temperature_values = self.temperature.readSignal(0)
-        self.temperature_frequency = self.temperature.getNSamples()[0] / self.temperature.getFileDuration()
+        self.temperature_frequency = 0.25
         self.temperature_start_datetime = self.temperature.getStartdatetime()
         self.temperature_duration = self.temperature.getFileDuration()
 
@@ -469,8 +469,7 @@ class SensorScripts:
 
         # Temperature
         pd.set_option('mode.chained_assignment', None)
-        zhou_df = pd.DataFrame({"Temperature Timestamps": self.temperature_timestamps,
-                                "Raw Temperature Values": self.temperature_values})
+
 
         temperature_moving_average = pd.Series(self.temperature_values).rolling(
             int(ws * self.temperature_frequency)).mean()
@@ -538,10 +537,26 @@ class SensorScripts:
                         not_worn = False
             return pd.Series([not_worn, accel_non_wear])
 
-
         not_worn = True
         binned_df[['Bin Not Worn?', 'is_accel_nw']] = binned_df.apply(lambda row: zhou_alg(row, use_updated_alg), axis=1)
         binned_df["Device Worn?"] = np.invert(binned_df['Bin Not Worn?'])
         binned_df["End Time"] = binned_df.index + dt.timedelta(seconds=1/self.temperature_frequency)
+
+        # # Remove wear periods that last less than 60 seconds
+        # nw_starts = binned_df.loc[(binned_df["Device Worn?"] == False) & (binned_df["Device Worn?"].shift(1) == True)].index
+        # nw_ends = binned_df["End Time"].loc[
+        #     ((binned_df["Device Worn?"] == False) & (binned_df["Device Worn?"].shift(-1) == True)) | (
+        #                 (binned_df["Device Worn?"].iloc[-1] == False) & (
+        #                     binned_df["End Time"] == binned_df["End Time"].iloc[-1]))].to_numpy()
+        #
+        # for end, start in zip(nw_ends[:-1],nw_starts[1:]):
+        #     if end-start < dt.timedelta(seconds = 60):
+        #         binned_df["Device Worn?"].loc[binned_df["End Time"] < end] = False
+
+
+        # remove non-wear periods that last less than 60 seconds
+
+
+        self.zhou_df = binned_df
 
         return binned_df
