@@ -1,13 +1,12 @@
 import pyedflib
-#from pathlib import Path
 import datetime
 import isodate
 import pandas as pd
-#import numpy as np
 import os
-#from tqdm import tqdm
+
 
 def create_filelist_csv(datapkg_dir):
+
     accel_dir = os.path.join(datapkg_dir, "Accelerometer", "DATAFILES")
     ecg_dir = os.path.join(datapkg_dir, "ECG", "DATAFILES")
 
@@ -18,7 +17,7 @@ def create_filelist_csv(datapkg_dir):
         visits = []
         sites = []
         dates = []
-        fileparts = []
+        # fileparts = []
         filenames = []
         filelist = [f for f in os.listdir(sensor_dir) if f.lower().endswith('.edf')]
         filenum = 0
@@ -37,7 +36,7 @@ def create_filelist_csv(datapkg_dir):
             visits.append('01')
             sites.append(f_split[1])
             dates.append(edf_header['startdate'].strftime("%Y%b%d").upper())
-            fileparts.append(f_split[5] if len(f_split) > 5 else '')
+            # fileparts.append(f_split[5] if len(f_split) > 5 else '')
             filenames.append(f)
 
         file_list_df = pd.DataFrame(
@@ -45,14 +44,17 @@ def create_filelist_csv(datapkg_dir):
              'VISIT': visits,
              'SITE': sites,
              'DATE': dates,
-             'FILEPART': fileparts,
+             # 'FILEPART': fileparts,
              'FILENAME': filenames
              })
-        file_list_df = file_list_df.sort_values(by=["SUBJECT","VISIT","FILEPART"], ignore_index=True)
+
+        file_list_df = file_list_df.sort_values(by=["SUBJECT", "VISIT", "FILENAME"], ignore_index=True)
         filelist_path = os.path.join(sensor_dir, 'OND06_ALL_01_SNSR_BITF_%s_2020MAY31_FILELIST.csv' % sensor_dir.split(os.sep)[-2].upper())
         file_list_df.to_csv(filelist_path, index=False)
 
+
 def create_data_csv(datapkg_dir):
+
     # Accel and ecg dir have the same files subjects, so only looking at accel files
     accel_dir = os.path.join(datapkg_dir, "Accelerometer", "DATAFILES")
     ecg_dir = os.path.join(datapkg_dir, "ECG", "DATAFILES")
@@ -69,8 +71,8 @@ def create_data_csv(datapkg_dir):
     device_ids = []
     start_times = []
     collection_duration_datetime = []
-    accelerometer_sample_rate = []
-    ecg_sample_rate = []
+    # accelerometer_sample_rate = []
+    # ecg_sample_rate = []
 
     filenum = 0
 
@@ -92,14 +94,14 @@ def create_data_csv(datapkg_dir):
         visits.append('01')
         sites.append(f_split[1])
         dates.append(header['startdate'].strftime("%Y%b%d").upper())
-        fileparts.append(f_split[5] if len(f_split) > 5 else '')        
+        fileparts.append(f_split[5] if len(f_split) > 5 else '')
         start_times.append(header['startdate'].strftime("%H:%M:%S"))
         device_ids.append(accel_edf_header['equipment'].split(' ')[1])
 
         duration = datetime.timedelta(seconds=header['Duration'])
         collection_duration_datetime.append(str(isodate.duration_isoformat(duration, 'P%dDT%HH%MM%SS')))
-        accelerometer_sample_rate.append(accel_edf_header['SignalHeaders'][0]['sample_rate'] if accel_edf_header else 'N/A')
-        ecg_sample_rate.append(ecg_edf_header['SignalHeaders'][0]['sample_rate'] if ecg_edf_header else 'N/A')
+        # accelerometer_sample_rate.append(accel_edf_header['SignalHeaders'][0]['sample_rate'] if accel_edf_header else 'N/A')
+        # ecg_sample_rate.append(ecg_edf_header['SignalHeaders'][0]['sample_rate'] if ecg_edf_header else 'N/A')
 
     summary_metrics_list = pd.DataFrame({"SUBJECT": subjects,
                                          "VISIT": visits,
@@ -108,9 +110,10 @@ def create_data_csv(datapkg_dir):
                                          "FILEPART": fileparts,
                                          "DEVICE_ID": device_ids,  # should be in the header
                                          "START_TIME": start_times,
-                                         "COLLECTION_DURATION": collection_duration_datetime,
-                                         "ACCELEROMETER_SAMPLE_RATE": accelerometer_sample_rate,
-                                         "ECG_SAMPLE_RATE": ecg_sample_rate})
+                                         "COLLECTION_DURATION": collection_duration_datetime})
+                                         #"ACCELEROMETER_SAMPLE_RATE": accelerometer_sample_rate,
+                                         #"ECG_SAMPLE_RATE": ecg_sample_rate
+
     summary_metrics_list = summary_metrics_list.sort_values(by=["SUBJECT", "VISIT", "FILEPART"], ignore_index=True)
     summary_path = os.path.join(datapkg_dir, 'OND06_ALL_01_SNSR_BITF_2020MAY31_DATA.csv')
     summary_metrics_list.to_csv(summary_path, index=False)
